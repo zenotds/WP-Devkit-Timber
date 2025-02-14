@@ -1,0 +1,12 @@
+## Team
+
+Bizen Srl
+https://www.bizen.it
+
+
+## Site
+
+Software: Built with [Timber](https://upstatement.com/timber/)
+Coded by: Francesco Selva
+CMS: Wordpress
+Tools: esbuild, tailwind, plyr, swiperjs, glightbox
