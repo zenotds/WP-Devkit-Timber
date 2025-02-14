@@ -1,0 +1,44 @@
+{
+	"name": "bizen/wp_composer",
+	"version": "4.0.2",
+	"description": "Composer for WP Devkit",
+	"type": "wordpress-theme",
+	"license": "MIT",
+	"authors": [
+		{
+			"email": "francesco.selva@bizen.it",
+			"name": "zenotds"
+		}
+	],
+	"repositories": [
+		{
+			"type": "composer",
+			"url": "https://wpackagist.org"
+		}
+	],
+	"require": {
+		"timber/timber": "^2.1",
+		"laminas/laminas-diactoros": "^3.3"
+	},
+	"require-dev": {
+		"automattic/wordbless": "^0.4.2",
+		"yoast/wp-test-utils": "^1.0"
+	},
+	"extra": {
+	  "installer-paths": {
+		"vendor/automattic/wordbless/": [
+		  "automattic/wordbless"
+		]
+	  },
+	  "wordpress-install-dir": "wordpress"
+	},
+	"config": {
+	  "allow-plugins": {
+		"roots/wordpress-core-installer": true, 
+		"composer/installers": true
+	  }
+	},
+	"scripts": {
+		"test": "phpunit"
+	}
+}

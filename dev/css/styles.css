@@ -1,0 +1,27 @@
+/* Tailwind */
+@import "tailwindcss";
+
+/* Tailwind theme variables */
+@theme {
+    --color-verde: #609422;
+    --breakpoint-3xl: 112rem;
+}
+
+/* Tailwind utilities */
+@utility container {
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+}
+
+/* BS5 */
+@import "./bs5/bs5";
+
+/* Base */
+@import "./base/custom";
+
+/* Root */
+:root {
+    --font-icons: "Font Awesome 6 Pro";
+    --font-brands: "Font Awesome 6 Brands";
+    --plyr-color-main: var(--color-verde);
+}
