@@ -1,5 +1,5 @@
 # Zeno's WP DevKit | Timber Edition
-This is a version of my WP Devkit that includes a customized and improved version of the Timber Starter Theme.
+This is a version of my WP Devkit 4.0 that includes a customized and improved version of the Timber Starter Theme.
 
 
 ## Stack and technologies
