@@ -1,0 +1,59 @@
+<nav class="main-menu ms-auto hidden items-center gap-6 p-0 lg:flex text-[13px] xl:text-sm 2xl:text-base" id="main-menu">
+    {% for item in main_menu.items %}
+
+        {% if item.children %}
+
+            <div class="nav-item dropdown {{ item.menu_type }} {{ item.class }} {% if 'current-page-ancestor' in item.classes or item.current or item.current_page_parent or item.current_item_ancestor %}active{% endif %} h-full">
+
+                <a class="nav-link relative flex h-full items-center after:absolute after:bottom-0 after:h-1.5 after:bg-green-500/75 after:w-full after:scale-y-0 after:origin-bottom" href="{{ item.url }}" target="{{ item.target }}">
+                    {{ item.name }}
+                    <i class="fal fa-angle-down ml-2 text-xs"></i>
+                </a>
+
+                <div class="dropdown-menu absolute m-0 flex w-60 flex-col border border-dark/20 bg-white text-dark shadow-lg">
+                    {% for child in item.children %}
+
+                        {% if child.master_object.status == 'publish' or child.type == 'taxonomy' or child.type == 'post_type_archive' %}
+
+                            <div class="dropdown-item {% if child.current or child.current_page_parent or child.current_item_ancestor or 'current-post-parent' in child.class or 'current-page-ancestor' in child.class %}active{% endif %}">
+
+                                <a class="flex items-center {{ not loop.last ? 'border-b border-darker/20' }} p-4 text-sm hover:text-green-500" href="{{ child.url }}" target="{{ child.target }}">
+                                    {{ child.name }}
+                                    {% if child.children %}
+                                        <i class="far fa-angle-right text-octane ml-auto !hidden text-xs 2xl:!block"></i>
+                                    {% endif %}
+                                </a>
+
+                                {% if child.children %}
+                                    <div class="dropdown-submenu absolute m-0 flex w-56 flex-col border bg-white shadow-lg">
+                                        {% for grandchild in child.children %}
+                                            {% if grandchild.master_object.status == 'publish' or grandchild.type == 'taxonomy' or grandchild.type == 'post_type_archive' %}
+
+                                                <a class="dropdown-item flex items-center border-b p-4 text-sm font-semibold hover:text-gold xl:text-base 3xl:text-[17px] {% if grandchild.current or grandchild.current_page_parent or grandchild.current_item_ancestor or 'current-post-parent' in grandchild.class or 'current-page-ancestor' in grandchild.class %}active{% endif %}" href="{{ grandchild.url }}" target="{{ grandchild.target }}">
+                                                    {{ grandchild.name }}
+                                                </a>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                            </div>
+
+                        {% endif %}
+
+                    {% endfor %}
+                </div>
+
+            </div>
+
+        {% else %}
+
+            <div class="nav-item {{ item.menu_type }} {{ item.class }} {% if item.current %}active{% endif %} h-full">
+                <a class="nav-link relative flex h-full items-center after:absolute after:bottom-0 after:h-1.5 after:bg-green-500/75 after:w-full after:scale-y-0 after:origin-bottom" href="{{ item.url }}" target="{{ item.target }}">
+                    {{ item.name }}
+                </a>
+            </div>
+
+        {% endif %}
+    {% endfor %}
+</nav>
