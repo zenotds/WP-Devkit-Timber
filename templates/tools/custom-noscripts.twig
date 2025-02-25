@@ -1,0 +1,5 @@
+{% if settings.custom_scripts %}
+    {% for script in settings.custom_scripts %}
+        {{ script.noscript }}
+    {% endfor %}
+{% endif %}

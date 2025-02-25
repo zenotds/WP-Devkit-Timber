@@ -1,0 +1,87 @@
+{% macro nav_item(item) %}
+    <div class="nav-item {% if item.current or 'current-menu-ancestor' in item.class or 'current-menu-parent' in item.class %}active{% endif %} {{ item.class }} flex border-b border-dark/20 hover:text-green-500 p-4 min-h-10">
+        <a class="nav-link font-base relative flex w-full self-center py-2 leading-none font-semibold whitespace-normal" href="{{ item.url }}" target="{{ item.target }}">
+            {{ item.name }}
+        </a>
+        {% if item.children %}
+            <button class="menu-toggle flex h-10 w-10 flex-shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-green-500 p-0 tracking-normal text-white hover:bg-dark" @click="$dispatch('menu-{{ item.id }}'); offcanvas = false" aria-label="Back">
+                <i class="fal fa-angle-right"></i>
+            </button>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro offcanvas(item, id_prefix) %}
+    {% if item.master_object.status == 'publish' %}
+        {% if item.children %}
+
+            <div id="{{ id_prefix }}{{ item.id }}" x-data="{ offcanvas: false }" class="offcanvas" :class="{ 'active': offcanvas }" x-on:{{ 'menu-' ~ item.id }}.window="offcanvas = !offcanvas" @keydown.escape.window="offcanvas = false">
+
+                <div class="backdrop fixed inset-0 bg-dark/80 z-[1000] transition-all duration-500" x-show="offcanvas" @click="offcanvas = false"></div>
+
+                <div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-[1000] overflow-y-auto transition-all duration-500 max-w-full w-100" :class="{ 'active': offcanvas }">
+
+                    <div class="header border-b border-dark/20 flex items-center p-4">
+                        <div class="action close me-auto flex h-10 w-10 flex-shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-green-500 p-0 tracking-normal text-white hover:bg-dark" @click="$dispatch('{% if item.menu_item_parent == '0' %}mobile-menu{% else %}menu-{{ item.menu_item_parent }}{% endif %}'); offcanvas = false" aria-label="Close">
+                            <i class="far fa-arrow-left"></i>
+                        </div>
+                        <span class="current font-semibold text-lg uppercase">
+                            {{ item.title }}
+                        </span>
+                    </div>
+                    
+
+                    <div class="body bg-white flex flex-col">
+
+                        <nav class="mobile-navigation grow overflow-auto">
+                            {% for item in item.children %}
+                                {{ _self.nav_item(item) }}
+                            {% endfor %}
+                        </nav>
+
+                    </div>
+
+                </div>
+            </div>
+
+            {% for child in item.children %}
+                {{ _self.offcanvas(child, id_prefix) }}
+            {% endfor %}
+
+        {% endif %}
+    {% endif %}
+{% endmacro %}
+
+<div id="mobile-menu" x-data="{ offcanvas: false }" class="offcanvas" :class="{ 'active': offcanvas }" x-on:mobile-menu.window="offcanvas = !offcanvas" @keydown.escape.window="offcanvas = false">
+
+    <div class="backdrop fixed inset-0 bg-dark/80 z-[1000] transition-all duration-500" x-show="offcanvas" @click="offcanvas = false"></div>
+
+    <div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-[1000] overflow-y-auto transition-all duration-500 max-w-full w-100" :class="{ 'active': offcanvas }">
+
+        <div class="header border-b border-dark/20 flex items-center p-4">
+
+            <button class="action close me-auto flex h-10 w-10 flex-shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-green-500 p-0 tracking-normal text-white hover:bg-dark" @click="offcanvas = false" aria-label="Close">
+                <i class="far fa-times"></i>
+            </button>
+
+            <a href="{{ site.url }}" class="logo flex m-0" aria-label="Go to homepage">
+                <img src="{{ settings.header_logo }}" class="logo-image h-18 w-auto" width="125" height="72" alt="{{ site.title }}">
+            </a>
+        </div>
+
+        <div class="body bg-white flex flex-col">
+
+            <div class="mobile-navigation grow overflow-auto">
+                {% for item in main_menu.items %}
+                    {{ _self.nav_item(item) }}
+                {% endfor %}
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+{% for item in main_menu.items %}
+    {{ _self.offcanvas(item, 'menu-') }}
+{% endfor %}

@@ -1,0 +1,28 @@
+{# Intro #}
+{% macro intro(content, align) %}
+
+    {% if content.title or content.subtitle or content.text or content.buttons %}
+        <div class="intro flex flex-col gap-2 has-[+*]:mb-8 xl:has-[+*]:mb-12 {{ align }}">
+
+            {% if content.title %}
+                <h2 class="title typo-h3">{{ content.title }}</h2>
+            {% endif %}
+
+            {% if content.subtitle %}
+                <h3 class="subtitle typo-h4 !font-normal">{{ content.subtitle }}</h3>
+            {% endif %}
+
+            {% if content.text %}
+                <div class="text typo-r">{{ content.text }}</div>
+            {% endif %}
+
+            {% if content.buttons %}
+                {% for button in content.buttons %}
+                    <div class="buttons mt-6">
+                        <a class="btn {{ button.color }}" href="{{ button.link.url }}" target="{{ button.link.target }}">{{ button.link.title }}</a>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    {% endif %}
+{% endmacro %}

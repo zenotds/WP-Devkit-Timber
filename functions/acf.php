@@ -88,29 +88,21 @@ function format_acf_text_fields($value, $post_id, $field) {
 }
 add_filter('acf/format_value', 'format_acf_text_fields', 10, 3);
 
-// Aggiungi ID univoco ai campi ACF
-function add_unique_ids_to_acf_fields($valore, $post_id, $campo) {
-    // Verifica se il campo è un array (utile per campi ripetitori o contenuti flessibili)
-    if (is_array($valore)) {
-        // Cicla attraverso ogni riga/layout
-        foreach ($valore as &$elemento) {
-            
-            // Per il campo ripetitore 'button'
-            if ($campo['name'] === 'button' && is_array($elemento) && !isset($elemento['unique_id'])) {
-                // Genera un ID univoco per le righe del bottone
-                $elemento['unique_id'] = uniqid();
-            }
-
-            // Per il campo contenuto flessibile 'gallery'
-            if ($campo['name'] === 'content' && isset($elemento['acf_fc_layout']) && $elemento['acf_fc_layout'] === 'gallery' && !isset($elemento['unique_id'])) {
-                // Genera un ID univoco per i layout della galleria
-                $elemento['unique_id'] = uniqid();
+// Aggiungi ID univoco a tutti gli array di ACF
+function add_uniqueid_to_acf($value, $post_id, $field) {
+    // Controlla se il valore del campo è un array (applicabile per ripetitori e contenuti flessibili)
+    if (is_array($value)) {
+        // Cicla attraverso ogni elemento nell'array (riga o layout)
+        foreach ($value as &$element) {
+            // Controlla se l'elemento è un array e non ha un 'unique_id'
+            if (is_array($element) && !isset($element['unique_id'])) {
+                // Genera un ID univoco e assegnalo all'elemento
+                $element['unique_id'] = uniqid();
             }
         }
     }
-    return $valore;
+    return $value;
 }
 
-// Applica il filtro sia ai campi 'button' che 'content' (o ad altri campi desiderati)
-add_filter('acf/load_value/name=button', 'add_unique_ids_to_acf_fields', 10, 3);
-add_filter('acf/load_value/name=content', 'add_unique_ids_to_acf_fields', 10, 3);
+// Aggiungi il filtro
+add_filter('acf/load_value', 'add_uniqueid_to_acf', 10, 3);

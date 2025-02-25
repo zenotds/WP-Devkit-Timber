@@ -1,0 +1,67 @@
+<footer class="footer border-t border-dark/20 pt-8">
+    <div class="container mx-auto">
+
+        <div class="wrapper grid grid-cols-3 gap-x-6 gap-y-12 mb-12">
+            {% if footer_menu %}
+                <div class="footer-menu w-full col-span-3 lg:col-span-2 grid sm:grid-cols-2 gap-6 gap-y-12">
+                    {% for item in footer_menu.items %}
+                        <div class="menu flex flex-col gap-y-2">
+                            {% if item.link == '#' %}
+                                <span class="font-bold mb-4 ">{{ item.title }}</span>
+                            {% else %}
+                                <a class="font-bold mb-4" href="{{ item.link }}" target="{{ item.target }}">{{ item.title }}</a>
+                            {% endif %}
+                            {% if item.children %}
+                                {% for child in item.children %}
+                                    <a href="{{ child.link }}" target="{{ child.target }}">{{ child.title }}</a>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {# Social #}
+            {% if settings.company_social %}
+                <div class="social-links flex items-start gap-4 col-span-3 lg:col-span-1 justify-start lg:justify-end">
+                    {% for social in settings.company_social %}
+                        <a class="flex aspect-square h-12 w-12 items-center justify-center bg-green-500 text-3xl rounded-md text-white hover:bg-dark" href="{{ social.link }}" title="{{ social.social }}" target="_blank">
+                            <i class="fab fa-{{ social.icon }}"></i>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        {% if settings.footer_text %}
+            <div class="bio typo-r !text-sm mb-8">
+                {{ settings.footer_text }}
+            </div>
+        {% endif %}
+
+        <div class="credits flex flex-wrap items-center gap-x-4 mb-4">©
+            {{"now"|date('Y')}}
+            {{ settings.company_name }}. Tutti i diritti riservati.
+            {% if settings.company_vat %}
+                <div>
+                    {{ __('P.IVA/CF/RI', 'theme')}}:
+                    {{ settings.company_vat }}
+                </div>
+            {% endif %}
+            {% if settings.company_rea %}
+                <div>
+                    {{ __('Numero REA', 'theme')}}:
+                    {{ settings.company_rea }}
+                </div>
+            {% endif %}
+
+            {% if settings.company_capital %}
+                <div>
+                    {{ __('Capitale sociale', 'theme')}}: €
+                    {{ settings.company_capital }}
+                    {{ __('i.v.', 'theme')}}
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+</footer>

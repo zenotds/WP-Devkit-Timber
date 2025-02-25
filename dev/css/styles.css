@@ -1,5 +1,7 @@
 /* Tailwind */
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@plugin "@tailwindcss/forms";
 
 /* Tailwind theme variables */
 @theme {
@@ -14,14 +16,38 @@
 }
 
 /* BS5 */
-@import "./bs5/bs5";
+/* @import "./bs5/bs5"; */
 
 /* Base */
+@import "./base/base";
 @import "./base/custom";
+
+/* Partial */
+@import "./partial/main-menu";
+@import "./partial/mobile-menu";
+
+/* SwiperJS */
+/* @import '../../node_modules/swiper/swiper'; */
+/* @import '../../node_modules/swiper/modules/pagination'; */
+/* @import '../../node_modules/swiper/modules/navigation'; */
+
+/* Fancyapps */
+/* @import "../../node_modules/@fancyapps/ui/dist/fancybox/fancybox"; */
+
+/* Plyr by Vidstack */
+/* @import '../../node_modules/vidstack/player/styles/plyr/theme.css';
+@import '../../node_modules/vidstack/player/styles/base.css';
+@import './plugins/plyr'; */
+
+/* Vidstack */
+/* @import '../../node_modules/vidstack/player/styles/default/theme.css'; */
+/* @import '../../node_modules/vidstack/player/styles/default/layouts/video.css'; */
+
 
 /* Root */
 :root {
     --font-icons: "Font Awesome 6 Pro";
     --font-brands: "Font Awesome 6 Brands";
     --plyr-color-main: var(--color-verde);
+    --plyr-border-radius: 0;
 }

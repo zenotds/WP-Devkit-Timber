@@ -1,0 +1,56 @@
+/* HTML */
+html {
+	scroll-behavior: smooth;
+	font-size: 16px;
+}
+
+/* Body */
+body {
+	text-size-adjust: none;
+	-webkit-text-size-adjust: none !important;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	position: relative;
+	overflow-x: clip;
+	color: var(--color-slate-500);
+	font-weight: 400;
+	font-family: var(--font-base);
+
+	&.modal-open {
+		padding-right: 0 !important;
+	}
+}
+
+/* Picture block fix */
+picture {
+	display: block;
+}
+
+/* Annulla margine dell'ultimo paragrafo in un blocco */
+*>p:last-child {
+	margin-bottom: 0;
+}
+
+/* Propaga transizioni ai figli di <a> */
+a {
+	transition: 0.15s linear;
+	/* color: inherit; */
+
+	* {
+		transition: 0.15s linear;
+	}
+}
+
+/* *:focus, */
+* {
+	@apply focus-visible:ring-3 focus-visible:ring-blue-700 focus-visible:!outline-0;
+}
+
+/* Tailwind extras */
+.child\:h-w-full>* {
+	@apply h-full w-full;
+}
+
+.child\:float-right>* {
+	@apply float-right;
+}

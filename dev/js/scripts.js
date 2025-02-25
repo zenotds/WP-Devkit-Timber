@@ -1,59 +1,40 @@
-// Bootstrap //
-import { Dropdown, Collapse, Modal, Tab, Offcanvas, } from 'bootstrap';
-
-// Hover Intent //
+// Hover Intent
 import './custom/hoverintent';
 
 // Smooth Scroll
-const links = document.querySelectorAll('[href^="#"]');
+import './custom/smoothscroll';
 
-for (const link of links) {
-    link.addEventListener('click', smoothFn);
-}
+// Alpine
+import Alpine from 'alpinejs'
+window.Alpine = Alpine.start()
 
-function smoothFn(e) {
-    e.preventDefault();
-    const href = this.getAttribute('href');
-    const targetId = href.substring(1); // Remove the '#' from the href to match data-id
-    const targetElement = document.querySelector(`[id="${targetId}"], [data-id="${targetId}"]`);
+// Vidstack
+import { PlyrLayout, VidstackPlayer } from 'vidstack/global/player';
+// import { VidstackPlayer, VidstackPlayerLayout } from 'vidstack/global/player';
 
-    if (targetElement) {
-        let headerHeight = document.querySelector('.header').clientHeight;
-        const offsetTop = targetElement.offsetTop - headerHeight;
-        scroll({
-            top: offsetTop,
-            behavior: 'smooth'
+async function initializePlayers() {
+    const players = document.querySelectorAll('.player');
+
+    players.forEach(async (el) => {
+        const src = el.dataset.src;
+        const title = el.dataset.title;
+        const poster = el.dataset.poster;
+        
+        // Skip if no source is provided
+        if (!src) return;
+
+        await VidstackPlayer.create({
+            layout: new PlyrLayout(),
+            // layout: new VidstackPlayerLayout(),
+            target: el,
+            src: src,
+            // title: title,
+            poster: poster
         });
-    }
+
+        console.log(`Player initialized for ${title}`);
+    });
 }
-
-// Plyr //
-import Plyr from 'plyr';
-
-// Video Player //
-const video_player = Plyr.setup('.video-player', {
-    controls: [
-        'play-large',
-        'play',
-        'progress',
-        'current-time',
-        'mute',
-        'volume',
-        'fullscreen'
-    ],
-    youtube: {
-        rel: 0,
-        showinfo: 0,
-        modestbranding: 1
-    },
-    vimeo: {
-        byline: false,
-        portrait: false,
-        title: false,
-        speed: true,
-        transparent: false
-    }
-});
 
 // Swiper //
 import Swiper from 'swiper';
@@ -61,7 +42,7 @@ import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 Swiper.use([Navigation, Pagination, Autoplay]);
 
 // Cards slider //
-const cardsSlider = new Swiper('.cards-slider', {
+const exampleSlider = new Swiper('.slider', {
     spaceBetween: 24,
     centerInsufficientSlides: true,
     breakpoints: {
@@ -76,7 +57,7 @@ const cardsSlider = new Swiper('.cards-slider', {
         },
     },
     navigation: {
-        nextEl: ".cards-nav.next",
-        prevEl: ".cards-nav.prev",
+        nextEl: ".slider-nav.next",
+        prevEl: ".slider-nav.prev",
     }
 });
