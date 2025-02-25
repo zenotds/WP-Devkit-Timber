@@ -12,11 +12,20 @@ add_filter('wpcf7_mail_html_body', function ($body) {
 // Disable native spam filter
 add_filter('wpcf7_spam', '__return_false');
 
-// Sostituisce markup checkbox con quelli di Bootstrap 5
+// Sostituisce markup checkbox e radio
 add_filter('wpcf7_form_elements', function ($content) {
+    $content_custom = preg_replace_callback(
+        '/<label><input type="(checkbox|radio)" name="(.*?)" value="(.*?)" \/><span class="wpcf7-list-item-label">(.*?)<\/span><\/label>/i',
+        function ($matches) {
+            $type = $matches[1] === 'radio' ? 'form-radio' : 'form-checkbox';
 
-    // BS5
-    $content_bs5 = preg_replace('/<label><input type="(checkbox|radio)" name="(.*?)" value="(.*?)" \/><span class="wpcf7-list-item-label">/i', '<label class="form-check"><input class="form-check-input" type="\1" name="\2" value="\3" id="\2"><span class="form-check-label wpcf7-list-item-label" for="\2">', $content);
+            return '<div class="form-toggle">
+                        <input class="' . $type . '" type="' . $matches[1] . '" name="' . $matches[2] . '" value="' . $matches[3] . '" id="' . $matches[2] . '">
+                        <label class="toggle-label" for="' . $matches[2] . '">' . $matches[4] . '</label>
+                    </div>';
+        },
+        $content
+    );
 
-    return $content_bs5;
+    return $content_custom;
 });

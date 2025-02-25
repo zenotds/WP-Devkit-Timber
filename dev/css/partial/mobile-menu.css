@@ -1,0 +1,37 @@
+.offcanvas-panel {
+
+    &.offcanvas-right {
+        right: 0;
+        transform: translateX(110%);
+    }
+
+    &.offcanvas-left {
+        left: 0;
+        transform: translateX(-110%);
+    }
+
+    &.active {
+        transform: translateX(0);
+    }
+}
+
+.mobile-navigation {
+    .nav-item {
+
+        &.cta {
+            @apply h-auto hover:bg-slate-500 bg-sky-50 hover:text-white;
+        }
+
+        &.cta-green-500 {
+            @apply bg-green-500 text-white;
+        }
+    }
+}
+
+.offcanvas:not(.active) {
+    visibility: hidden;
+}
+
+body:has(.offcanvas.active) {
+    overflow-y: hidden;
+}

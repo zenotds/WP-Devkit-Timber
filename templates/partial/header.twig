@@ -1,0 +1,24 @@
+<header class="header border-b border-dark/20 sticky top-0 z-[999] backdrop-blur-sm transition-all bg-white/80" x-data>
+    <div class="container">
+
+        <div class="navbar flex gap-6 items-stretch p-0 w-full">
+
+            <div class="logo flex m-0 pr-8 py-4">
+                <a href="{{ site.url }}" aria-label="Homepage">
+                    <img src="{{ settings.header_logo|towebp|resize(200) }}" class="logo-image h-18 w-auto" width="125" height="72" alt="{{ site.title }}">
+                </a>
+            </div>
+
+            {% include "/partial/main-menu.twig" %}
+
+            <button class="header-toggler mobile-toggler ml-auto flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center self-center rounded p-0 text-xl tracking-normal text-white hover:bg-dark lg:hidden" @click="$dispatch('mobile-menu')" aria-controls="mobile-menu" aria-label="Menu">
+                <i class="fal fa-bars"></i>
+            </button>
+
+        </div>
+    </div>
+
+</header>
+
+{# Mobile Menu #}
+{% include 'partial/mobile-menu.twig' %}

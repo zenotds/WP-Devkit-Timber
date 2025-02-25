@@ -1,6 +1,6 @@
 {
-	"name": "bizen/wp_composer",
-	"version": "4.0.2",
+	"name": "zenotds/wp_composer",
+	"version": "4.1",
 	"description": "Composer for WP Devkit",
 	"type": "wordpress-theme",
 	"license": "MIT",
@@ -21,24 +21,11 @@
 		"laminas/laminas-diactoros": "^3.3"
 	},
 	"require-dev": {
-		"automattic/wordbless": "^0.4.2",
 		"yoast/wp-test-utils": "^1.0"
 	},
-	"extra": {
-	  "installer-paths": {
-		"vendor/automattic/wordbless/": [
-		  "automattic/wordbless"
-		]
-	  },
-	  "wordpress-install-dir": "wordpress"
-	},
 	"config": {
-	  "allow-plugins": {
-		"roots/wordpress-core-installer": true, 
-		"composer/installers": true
-	  }
-	},
-	"scripts": {
-		"test": "phpunit"
+		"allow-plugins": {
+			"composer/installers": true
+		}
 	}
 }

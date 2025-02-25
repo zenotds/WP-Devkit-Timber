@@ -1,0 +1,19 @@
+[data-layout="plyr"] {
+	-webkit-transform: translateZ(0);
+}
+
+/* Poster size fix */
+.plyr__poster {
+	background-size: cover;
+}
+
+/* Accessibility fix */
+.plyr :focus-visible,
+.plyr [data-focus] {
+	outline: none
+}
+
+.plyr .plyr__slider:focus-visible .plyr__slider__track,
+.plyr .plyr__slider[data-focus] .plyr__slider__track {
+	outline: none
+}

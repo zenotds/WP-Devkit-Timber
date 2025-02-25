@@ -1,10 +1,10 @@
 # Zeno's WP DevKit | Timber Edition
-This is a version of my WP Devkit 4.0 that includes a customized and improved version of the Timber Starter Theme.
+This is a version of my WP Devkit 4.x that includes a customized and improved version of the Timber Starter Theme.
 
 
 ## Stack and technologies
 - This theme uses Timber Starter Theme 2.0
-- Styling is mainly done with Tailwind 4.0
+- Styling is mainly done with Tailwind 4.x
 - Useful other NPM Packages are included, check the packages.json for details
 
 
@@ -44,8 +44,8 @@ Structure the theme as you see fit but keep the structure for these 2 folders:
 
 ## Commands
 
-`npm run watch` to watch for changes and build assets
-`npm run build` to build assets
+`npm run dev` or `watch` to watch for changes and build assets
+`npm run prod` or `build` to build assets
 `npm run bs5` to build Bootstrap from dev/css/bs5/bs5.source (SASS)
 
 
@@ -68,3 +68,12 @@ Structure the theme as you see fit but keep the structure for these 2 folders:
 ## Changelog
 
 v1.0 - First version
+
+v1.1 - Updated core and other components
+ - fixed missing index.php
+ - ditched bootstrap (which is still available) for alpine.js
+ - replaced plyr with its vidstack based version
+ - replaced bs5 modals and glightbox with fancybox
+ - better starter theme, includes main menu and mobile menu built with alpine
+ - compiles ootb without tailwind custom class errors
+ - afterinstall script automatically generates shortcut to wp-config.php
