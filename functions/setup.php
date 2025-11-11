@@ -46,6 +46,7 @@ class StarterSite extends Site
 		$context['server'] = (object) $_SERVER;
 		$context['upload_dir'] = wp_get_upload_dir();
 		$context['logout_url'] = wp_logout_url(home_url());
+		$context['is_blog_page'] = is_home();
 
 		// Menu
 		$context['top_menu'] = Timber::get_menu('top_menu');
@@ -80,7 +81,7 @@ class StarterSite extends Site
 
 		// YOAST Breadcrumbs
 		if (function_exists('yoast_breadcrumb') && !is_front_page()) {
-			$context['breadcrumbs'] = yoast_breadcrumb('<ol class="breadcrumb">', '</ol>', false);
+			$context['breadcrumbs'] = yoast_breadcrumb('<nav class="breadcrumb" aria-label="breadcrumbs">', '</nav>', false);
 		}
 
 		// Get options
@@ -118,8 +119,8 @@ class StarterSite extends Site
 		add_theme_support(
 			'html5',
 			array(
-				'comment-form',
-				'comment-list',
+				// 'comment-form',
+				// 'comment-list',
 				'gallery',
 				'caption',
 			)
@@ -130,18 +131,18 @@ class StarterSite extends Site
 		 *
 		 * See: https://codex.wordpress.org/Post_Formats
 		 */
-		add_theme_support(
-			'post-formats',
-			array(
-				'aside',
-				'image',
-				'video',
-				'quote',
-				'link',
-				'gallery',
-				'audio',
-			)
-		);
+		// add_theme_support(
+		// 	'post-formats',
+		// 	array(
+		// 		'aside',
+		// 		'image',
+		// 		'video',
+		// 		'quote',
+		// 		'link',
+		// 		'gallery',
+		// 		'audio',
+		// 	)
+		// );
 
 		add_theme_support('menus');
 	}

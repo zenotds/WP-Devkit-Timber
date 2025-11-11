@@ -1,21 +1,21 @@
 <?php
 // Kill language error
 add_filter('doing_it_wrong_trigger_error', function () {
-    return false;
+	return false;
 }, 10, 0);
 
 // Funzioni per ottimizzare le immagini immagini
 add_filter('jpeg_quality', function ($arg) {
-    return 100;
+	return 100;
 });
 
 add_filter('intermediate_image_sizes', function ($sizes) {
-    return array_diff($sizes, ['medium_large']);  // Medium Large (768 x 0)
+	return array_diff($sizes, ['medium_large']);  // Medium Large (768 x 0)
 });
 
 add_action('init', function () {
-    remove_image_size('1536x1536'); // 2 x Medium Large (1536 x 1536)
-    remove_image_size('2048x2048'); // 2 x Large (2048 x 2048)
+	remove_image_size('1536x1536'); // Medium Large (1536 x 1536)
+	remove_image_size('2048x2048'); // Large (2048 x 2048)
 });
 
 // Init traduzione stringhe
@@ -80,16 +80,16 @@ function custom_yoast_breadcrumb_single_link($link_output, $link)
 // WPRocket for editors
 function custom_wp_rocket()
 {
-    // gets the author role object
-    $role = get_role('editor');
+	// gets the author role object
+	$role = get_role('editor');
 
-    // add a new capability
-    $role->add_cap('rocket_regenerate_critical_css', true);
-    $role->add_cap('rocket_purge_cache', true);
-    $role->add_cap('rocket_purge_cloudflare_cache', true);
-    $role->add_cap('rocket_purge_sucuri_cache', true);
-    $role->add_cap('rocket_preload_cache', true);
-    $role->add_cap('rocket_remove_unused_css', true);
-    $role->add_cap('rocket_purge_posts', true);
+	// add a new capability
+	$role->add_cap('rocket_regenerate_critical_css', true);
+	$role->add_cap('rocket_purge_cache', true);
+	$role->add_cap('rocket_purge_cloudflare_cache', true);
+	$role->add_cap('rocket_purge_sucuri_cache', true);
+	$role->add_cap('rocket_preload_cache', true);
+	$role->add_cap('rocket_remove_unused_css', true);
+	$role->add_cap('rocket_purge_posts', true);
 }
 add_action('init', 'custom_wp_rocket', 12);

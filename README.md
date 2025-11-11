@@ -1,79 +1,234 @@
 # Zeno's WP DevKit | Timber Edition
-This is a version of my WP Devkit 4.x that includes a customized and improved version of the Timber Starter Theme.
 
+A modern, opinionated WordPress theme development kit built on Timber, featuring Tailwind CSS 4.x, esbuild, and a curated set of tools for efficient theme development.
 
-## Stack and technologies
-- This theme uses Timber Starter Theme 2.0
-- Styling is mainly done with Tailwind 4.x
-- Useful other NPM Packages are included, check the packages.json for details
+## ✨ Features
 
+- 🌲 **Timber 2.0** - Component-based theme development with Twig templating
+- 🎨 **Tailwind CSS 4.x** - Modern utility-first CSS with the latest features
+- ⚡ **esbuild** - Lightning-fast build system with hot reload
+- 📦 **Modular Scripts** - Tree-shakeable ES6 modules for common UI patterns
+- 🔧 **WordPress Best Practices** - Proper enqueue system and cache management
 
-## Timber Starter Site improvements
-- "views" renamed to "templates"
-- "src" renamed to "functions"
-- various function partials to deal with: forms, acf, twig, menus, options (not mandatory)
+## 🚀 Quick Start
 
+### Prerequisites
 
-## Suggested WP plugins
-Some custom functions are based on the usage of these plugins
-- ACF Pro (custom fields)
-- Yoast SEO (SEO)
-- WPML (for multilanguage site)
-- WPRocket (advanced cache)
-- CF7 (forms)
+- Node.js 18+ and npm
+- PHP 8.0+
+- Composer
+- WordPress 6.0+
 
+### Installation
 
-## Basic Structure for build automation
+1. **Install Dependencies**
+   ```bash
+   npm install
+   composer install
+   ```
 
-Structure the theme as you see fit but keep the structure for these 2 folders:
+2. **Configure Development URL**
+   
+   Edit `esbuild.js` at line 245 and set your local development domain:
+   ```javascript
+   const PROXY_URL = 'https://your-site.test';
+   ```
 
-- assets -> compiled files
-  - js -> compiled scripts
-  - css -> compiled styles
+3. **Start Development**
+   ```bash
+   npm run dev
+   ```
 
-- dev -> source files
-  - js -> source scripts
-  - css -> source styles
+4. **Build for Production**
+   ```bash
+   npm run build
+   ```
 
+### Available Commands
 
-## Instructions
+| Command | Alias | Description |
+|---------|-------|-------------|
+| `npm run dev` | `watch` | Watch for changes and rebuild assets with hot reload |
+| `npm run build` | `prod` | Build optimized assets for production |
 
-1. Run `npm install` to install all dependencies
-2. Change line 162 inside `esbuild.js` to your dev domain
+## 📁 Project Structure
 
+### Theme Organization
 
-## Commands
+```
+your-theme/
+├── assets/               # Compiled files (auto-generated)
+│   ├── css/              # Compiled stylesheets
+│   └── js/               # Compiled scripts
+├── dev/                  # Source files
+│   ├── css/              # Source stylesheets (Tailwind)
+│   └── js/               # Source scripts (ES6 modules)
+├── functions/            # Theme logic (renamed from "src")
+│   ├── acf.php           # Advanced Custom Fields setup
+│   ├── blocks.php        # Gutenberg / Block editor setup
+│   ├── custom.php        # Other stuff
+│   ├── enqueue.php       # Script and style enqueueing
+│   ├── forms.php         # Form handling utilities
+│   ├── menus.php         # Navigation menu configuration
+│   ├── setup.php         # Timber Starter and settings
+│   └── twig.php          # Twig extensions and filters
+└── templates/            # Twig templates (renamed from "views")
+```
 
-`npm run dev` or `watch` to watch for changes and build assets
-`npm run prod` or `build` to build assets
-`npm run bs5` to build Bootstrap from dev/css/bs5/bs5.source (SASS)
+### Key Changes from Timber Starter Theme
 
+- `views/` → `templates/` - More intuitive naming for Twig files
+- `src/` → `functions/` - Clearer separation of PHP logic
+- Modular function partials for better code organization
+- All partials are optional - use what you need
+- Some templates have been removed and base.twig has a more modular structure
 
-## Composer
+## 🎯 Technology Stack
 
-1. Run `composer install` to install Timber and other dependencies
+### Core Technologies
 
+- **[Timber](https://timber.github.io/docs/)** ^2.0 - MVC-style theme development
+- **[Tailwind CSS](https://tailwindcss.com/)** ^4.x - Utility-first CSS framework
+- **[PostCSS](https://postcss.org/)** - CSS transformation with plugins
+- **[esbuild](https://esbuild.github.io/)** - Ultra-fast JavaScript bundler
 
-## Build notes
+### Included Libraries
 
-- Fonts (woff, woff2, ttf, eot) and other static assets are ignored and not processed during runtime, keep these files and reference them relative to the /assets/ folder
+Check `package.json` for the complete list. Notable inclusions:
 
+- **[Alpine.js](https://alpinejs.dev/)** - Lightweight JavaScript framework
+- **[GSAP](https://greensock.com/gsap/)** - Professional-grade animation
+- **[Swiper](https://swiperjs.com/)** - Modern touch slider
+- **[Vidstack](https://www.vidstack.io/)** - Advanced video player
+- **Custom Utilities** - Autohide, HoverIntent, SmoothScroll, Sticky
 
-## Notes
+### Custom JavaScript Modules
 
-- Avoid images in css, there are better ways :P
-- The starter comes with some useful JS packages such as gLightbox, Swiper, Plyr, etc.
-- Feel free to edit whatever you want as you see fit.
+Import only what you need:
 
-## Changelog
+```javascript
+import { Autohide, HoverIntent, SmoothScroll, Sticky } from './custom/custom.js';
 
-v1.0 - First version
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  Autohide('.header', 80);
+  SmoothScroll();
+  Sticky('.sidebar');
+  
+  new HoverIntent(document.querySelectorAll('.dropdown'), {
+    onEnter: (el) => el.classList.add('open'),
+    onExit: (el) => el.classList.remove('open')
+  });
+});
+```
 
-v1.1 - Updated core and other components
- - fixed missing index.php
- - ditched bootstrap (which is still available) for alpine.js
- - replaced plyr with its vidstack based version
- - replaced bs5 modals and glightbox with fancybox
- - better starter theme, includes main menu and mobile menu built with alpine
- - compiles ootb without tailwind custom class errors
- - afterinstall script automatically generates shortcut to wp-config.php
+## 🔌 Recommended WordPress Plugins
+
+These plugins integrate seamlessly with the theme's custom functions:
+
+| Plugin | Purpose | Required |
+|--------|---------|----------|
+| **[ACF Pro](https://www.advancedcustomfields.com/)** | Custom fields and flexible content | Highly Recommended |
+| **[Yoast SEO](https://yoast.com/)** | Search engine optimization | Recommended |
+| **[WPML](https://wpml.org/)** | Multilingual site support | Optional |
+| **[WP Rocket](https://wp-rocket.me/)** | Advanced caching and optimization | Optional |
+| **[Contact Form 7](https://contactform7.com/)** | Form builder and management | Optional |
+
+## 🛠️ Build System
+
+### Asset Processing
+
+- **CSS**: Tailwind CSS compilation with PostCSS
+- **JavaScript**: ES6+ transpilation and bundling with esbuild
+- **Static Assets**: Fonts and images are not processed - reference them relative to `/assets/`
+
+### Build Features
+
+- **Hot Module Replacement** - Instant updates during development
+- **Error Handling** - Robust error catching and reporting
+- **Debouncing** - Prevents unnecessary rebuilds
+- **Version Tagging** - Automatic versioning in output files
+- **Cache Busting** - WordPress enqueue system with version hashes
+
+### Important Notes
+
+- ⚠️ **Avoid images in CSS** - Use `<img>` tags or background images via HTML/Twig for better performance
+- 📁 **Static fonts** - Place fonts in `/assets/webfonts/` and reference them directly in CSS
+- 🎯 **ES Modules** - All JavaScript uses modern module syntax with tree-shaking
+- 🎯 **Tailwind utilities** - Theme compiles without custom class errors out of the box
+
+## 🎨 Styling Guidelines
+
+This theme uses Tailwind CSS 4.x with the new `@import`, `@theme`, and `@utility` syntax:
+
+```css
+/* dev/css/main.css */
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #3b82f6;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+@utility custom-shadow {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+```
+
+Includes a Biome config to handle Tailwind 4.0 syntax.
+
+## 📝 Changelog
+
+### v5.0 - Modern Architecture (Current)
+
+**Breaking Changes**
+- Removed Bootstrap completely (so long, and thanks for all the fish! 🐬)
+- Removed situational dependencies: smooth-scroll, tippy, vanillasharing
+- Aligned version numbering with non-timber devkit
+
+**New Features**
+- ✨ Custom scripts refactored as ES6 modules with comprehensive documentation
+- ⚡ Enhanced esbuild configuration with error handling and debouncing
+- 🎯 WordPress enqueue system for better versioning and cache management
+- 🧹 Biome integration with Tailwind v4 compatibility
+- 📊 Build outputs version and date on separate lines for better caching
+
+**Improvements**
+- Streamlined installation experience
+- Removed unused devDependencies
+- Build outputs version and date on separate lines
+- Various under-the-hood optimizations
+
+### v1.1 - Alpine Era
+
+- Fixed missing index.php
+- Replaced Bootstrap with Alpine.js
+- Upgraded to Vidstack player
+- Replaced modals with Fancybox
+- Better starter theme with Alpine-powered menus
+- Auto-generates wp-config.php shortcut
+
+### v1.0 - Initial Release
+
+First public version
+
+## 🤝 Contributing
+
+This is a personal development kit, but suggestions and improvements are welcome! Feel free to fork and adapt to your needs.
+
+## 📄 License
+
+This project is provided as-is for theme development. Individual dependencies maintain their own licenses.
+
+## 🙏 Credits
+
+Built with ❤️ by [@zenotds](https://github.com/zenotds)
+
+Special thanks to:
+- [Timber](https://timber.github.io/) team
+- [Tailwind CSS](https://tailwindcss.com/) team
+- All the amazing open-source contributors
+
+---
+
+**Happy theming!** 🎉

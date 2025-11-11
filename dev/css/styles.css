@@ -1,22 +1,5 @@
 /* Tailwind */
 @import "tailwindcss";
-@plugin "@tailwindcss/typography";
-@plugin "@tailwindcss/forms";
-
-/* Tailwind theme variables */
-@theme {
-    --color-verde: #609422;
-    --breakpoint-3xl: 112rem;
-}
-
-/* Tailwind utilities */
-@utility container {
-    margin-inline: auto;
-    padding-inline: 1.5rem;
-}
-
-/* BS5 */
-/* @import "./bs5/bs5"; */
 
 /* Base */
 @import "./base/base";
@@ -30,9 +13,9 @@
 /* @import '../../node_modules/swiper/swiper'; */
 /* @import '../../node_modules/swiper/modules/pagination'; */
 /* @import '../../node_modules/swiper/modules/navigation'; */
-
-/* Fancyapps */
-/* @import "../../node_modules/@fancyapps/ui/dist/fancybox/fancybox"; */
+/* @import '../../node_modules/swiper/modules/effect-fade'; */
+/* @import '../../node_modules/swiper/modules/thumbs'; */
+/* @import './plugins/swiper'; */
 
 /* Plyr by Vidstack */
 /* @import '../../node_modules/vidstack/player/styles/plyr/theme.css';
@@ -43,11 +26,28 @@
 /* @import '../../node_modules/vidstack/player/styles/default/theme.css'; */
 /* @import '../../node_modules/vidstack/player/styles/default/layouts/video.css'; */
 
+/* Tailwind theme variables */
+@theme {
+	--color-verde: #609422;
+	--breakpoint-3xl: 112rem;
+	--font-poppins: "Poppins", sans-serif;
+	--text-h1: clamp(2rem, 1.5rem + 2vw, 3.25rem);
+}
+
+/* Tailwind utilities */
+@utility container {
+	margin-inline: auto;
+	padding-inline: 1.5rem;
+}
+
+/* Tailwind plugins */
+@plugin "@tailwindcss/typography";
+@plugin "@tailwindcss/forms";
 
 /* Root */
 :root {
-    --font-icons: "Font Awesome 6 Pro";
-    --font-brands: "Font Awesome 6 Brands";
-    --plyr-color-main: var(--color-verde);
-    --plyr-border-radius: 0;
+	--font-icons: "Font Awesome 6 Pro";
+	--font-brands: "Font Awesome 6 Brands";
+	--plyr-color-main: var(--color-verde);
+	--plyr-border-radius: 0;
 }
