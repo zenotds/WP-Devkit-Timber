@@ -83,14 +83,15 @@ function format_acf_text_fields($value, $post_id, $field)
 {
 	// Applica solo ai campi basati su testo.
 	$text_field_types = array('text', 'textarea', 'message');
-
 	if (in_array($field['type'], $text_field_types)) {
-		// Sostituisci i pattern racchiusi tra asterischi con tag <span class="alt">.
-		$pattern = '/\*(.*?)\*/';
-		$replacement = '<span class="alt">$1</span>';
-		$value = preg_replace($pattern, $replacement, $value);
+		// Check if value is not null or empty before processing
+		if (!empty($value) && is_string($value)) {
+			// Sostituisci i pattern racchiusi tra asterischi con tag <span class="alt">.
+			$pattern = '/\*(.*?)\*/';
+			$replacement = '<span class="alt">$1</span>';
+			$value = preg_replace($pattern, $replacement, $value);
+		}
 	}
-
 	return $value;
 }
 add_filter('acf/format_value', 'format_acf_text_fields', 10, 3);
@@ -111,8 +112,6 @@ function add_uniqueid_to_acf($value, $post_id, $field)
 	}
 	return $value;
 }
-
-// Aggiungi il filtro
 add_filter('acf/load_value', 'add_uniqueid_to_acf', 10, 3);
 
 // Google API per campo Maps

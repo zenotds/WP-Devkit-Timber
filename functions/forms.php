@@ -19,10 +19,7 @@ add_filter('wpcf7_form_elements', function ($content) {
         function ($matches) {
             $type = $matches[1] === 'radio' ? 'form-radio' : 'form-checkbox';
 
-            return '<div class="form-toggle">
-                        <input class="' . $type . '" type="' . $matches[1] . '" name="' . $matches[2] . '" value="' . $matches[3] . '" id="' . $matches[2] . '">
-                        <label class="toggle-label" for="' . $matches[2] . '">' . $matches[4] . '</label>
-                    </div>';
+            return '<div class="form-toggle"> <input class="' . $type . '" type="' . $matches[1] . '" name="' . $matches[2] . '" value="' . $matches[3] . '" id="' . $matches[2] . '"> <label class="toggle-label" for="' . $matches[2] . '">' . $matches[4] . '</label> </div>';
         },
         $content
     );

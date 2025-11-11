@@ -1,133 +1,129 @@
 .form {
+	.wpcf7-form {
+		@apply grid md:grid-cols-2 gap-6;
 
-    .wpcf7-form {
-        @apply grid md:grid-cols-2 gap-6;
+		&.sent {
+			.wpcf7-form-control-wrap {
+				@apply hidden;
+			}
+		}
 
-        &.sent {
-            .wpcf7-form-control-wrap {
-                @apply hidden;
-            }
-        }
+		&.submitting {
+			[type="submit"] {
+				opacity: 0.5;
+			}
+		}
+	}
 
-        &.submitting {
-            [type="submit"] {
-                opacity: .5;
-            }
-        }
-    }
+	.form-group {
+		@apply grid self-start;
 
-    .form-group {
-        @apply grid self-start;
+		&.full {
+			@apply col-span-full;
+		}
 
-        &.full {
-            @apply col-span-full;
-        }
+		label {
+			@apply mb-2;
+		}
+	}
 
-        label {
-            @apply mb-2;
-        }
-    }
+	.check-group {
+		@apply grid gap-2;
 
-    .check-group {
-        @apply grid gap-2;
+		&.full {
+			@apply col-span-full;
+		}
+	}
 
-        &.full {
-            @apply col-span-full;
-        }
-    }
+	.send-group {
+		@apply col-span-full flex justify-end;
 
-    .send-group {
+		.send-btn {
+			@apply relative grid;
 
-        @apply col-span-full flex justify-end;
+			.wpcf7-spinner {
+				@apply absolute self-center;
+			}
+		}
+	}
 
-        .send-btn {
-            @apply relative grid;
+	input,
+	textarea,
+	select {
+		&:focus,
+		&:focus-visible {
+			@apply outline-0 ring-0;
+		}
+	}
 
-            .wpcf7-spinner {
-                @apply absolute self-center;
-            }
-        }
+	.form-input {
+		@apply w-full;
+	}
 
-    }
+	.form-textarea {
+		@apply w-full;
+	}
 
-    input,
-    textarea,
-    select {
+	.form-select {
+		@apply w-full;
+	}
 
-        &:focus,
-        &:focus-visible {
-            @apply outline-0 ring-0;
-        }
-    }
+	.form-multiselect {
+		@apply w-full;
+	}
 
-    .form-input {
-        @apply w-full;
-    }
+	.form-toggle {
+		@apply w-full flex items-start gap-1.5;
 
-    .form-textarea {
-        @apply w-full;
-    }
+		.form-checkbox,
+		.form-radio {
+			@apply mt-[3px];
 
-    .form-select {
-        @apply w-full;
-    }
+			&:focus {
+				@apply border-blue-700;
+			}
 
-    .form-multiselect {
-        @apply w-full;
-    }
+			&:checked {
+				@apply bg-green-500;
+			}
+		}
 
-    .form-toggle {
-        @apply w-full flex items-start gap-1.5;
+		.toggle-label {
+			a {
+				@apply font-semibold underline;
 
-        .form-checkbox,
-        .form-radio {
-            @apply mt-[3px];
+				&:hover {
+					@apply text-green-500;
+				}
+			}
+		}
+	}
 
-            &:focus {
-                @apply border-blue-700;
-            }
+	.wpcf7-checkbox,
+	.wpcf7-radio {
+		@apply w-full flex flex-wrap items-center gap-6;
+	}
 
-            &:checked {
-                @apply bg-green-500;
-            }
-        }
+	.wpcf7-list-item {
+		@apply m-0;
+	}
 
-        .toggle-label {
-            a {
-                @apply font-semibold underline;
+	.wpcf7-submit {
+	}
 
-                &:hover {
-                    @apply text-green-500;
-                }
-            }
-        }
-    }
+	.wpcf7-not-valid {
+		@apply border-red-600;
+	}
 
-    .wpcf7-checkbox,
-    .wpcf7-radio {
-        @apply w-full flex flex-wrap items-center gap-6;
-    }
+	.wpcf7-not-valid-tip {
+		@apply font-normal text-xs text-red-600 block mb-1 mt-1;
+	}
 
-    .wpcf7-list-item {
-        @apply m-0;
-    }
+	.wpcf7-response-output {
+		@apply rounded border text-sm font-normal !m-0 my-auto relative;
 
-    .wpcf7-submit {}
-
-    .wpcf7-not-valid {
-        @apply border-red-600;
-    }
-
-    .wpcf7-not-valid-tip {
-        @apply font-normal text-xs text-red-600 block mb-1 mt-1;
-    }
-
-    .wpcf7-response-output {
-        @apply rounded border text-sm font-normal !m-0 my-auto relative;
-
-        &.wpcf7-validation-errors {
-            @apply border-red-600 text-red-600;
-        }
-    }
-
+		&.wpcf7-validation-errors {
+			@apply border-red-600 text-red-600;
+		}
+	}
 }

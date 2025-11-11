@@ -72,24 +72,45 @@ function extend_twig($twig)
         return $array;
     }));
 
+    // Sort by term order
+    $twig->addFilter(new Twig\TwigFilter('sbt', function ($terms) {
+        usort($terms, function ($a, $b) {
+            return ((int) $a->term_order) <=> ((int) $b->term_order);
+        });
+        return $terms;
+    }));
+
     // import SVG
     $twig->addFilter(new \Twig\TwigFilter('svg', function ($source) {
-        // Convert the URL to a local file path if needed
-        $local_path = str_replace(
-            get_bloginfo('url'),    // This will get the WordPress site's URL
-            ABSPATH,                // The absolute path to the root of the WordPress installation
-            $source
-        );
-
-        // Check if the converted path exists
-        if (file_exists($local_path)) {
-            // Read and return the SVG contents
-            return file_get_contents($local_path);
-        } else {
-            // Return an error comment if the file doesn't exist
-            return "<!-- SVG file not found: $source -->";
+        // Handle relative paths from theme directory
+        if (!file_exists($source)) {
+            $theme_path = get_template_directory() . '/' . ltrim($source, '/');
+            if (file_exists($theme_path)) {
+                $source = $theme_path;
+            }
         }
-    }));
+
+        // Check if file exists and is readable
+        if (!file_exists($source) || !is_readable($source)) {
+            return '<!-- SVG file not found: ' . esc_html($source) . ' -->';
+        }
+
+        // Verify it's an SVG file
+        $file_info = pathinfo($source);
+        if (strtolower($file_info['extension']) !== 'svg') {
+            return '<!-- Invalid file type. Expected SVG: ' . esc_html($source) . ' -->';
+        }
+
+        // Read and return SVG content
+        $svg_content = file_get_contents($source);
+
+        // Basic security: ensure it's valid SVG content
+        if ($svg_content === false || strpos($svg_content, '<svg') === false) {
+            return '<!-- Invalid SVG content: ' . esc_html($source) . ' -->';
+        }
+
+        return $svg_content;
+    }, ['is_safe' => ['html']]));
 
     // Get PDF Preview
     $twig->addFilter(new Twig\TwigFilter('pdf', function ($attachment_id) {
