@@ -1,0 +1,27 @@
+{
+    "key": "ui_options_page_6634b48ced5fc",
+    "title": "Opzioni Avanzate",
+    "active": true,
+    "menu_order": 0,
+    "page_title": "Opzioni Avanzate",
+    "menu_slug": "avanzate",
+    "parent_slug": "site-settings",
+    "advanced_configuration": 1,
+    "icon_url": "",
+    "menu_title": "",
+    "position": 999,
+    "redirect": 0,
+    "description": "",
+    "menu_icon": {
+        "type": "dashicons",
+        "value": "dashicons-admin-generic"
+    },
+    "update_button": "Aggiorna",
+    "updated_message": "Opzioni Aggiornate",
+    "capability": "edit_posts",
+    "data_storage": "options",
+    "post_id": "",
+    "autoload": 0,
+    "_parent": 125,
+    "modified": 1740581106
+}
