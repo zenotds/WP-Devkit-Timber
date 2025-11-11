@@ -18,40 +18,6 @@ add_action('init', function () {
     remove_image_size('2048x2048'); // 2 x Large (2048 x 2048)
 });
 
-// Disable Gutenberg
-add_filter('use_block_editor_for_post_type', '__return_false', 10);
-
-// Don't load Gutenberg-related stylesheets.
-add_action('wp_enqueue_scripts', 'remove_block_css', 100);
-function remove_block_css()
-{
-    wp_dequeue_style('wp-block-library'); // Wordpress core
-    wp_dequeue_style('wp-block-library-theme'); // Wordpress core
-    wp_dequeue_style('wc-block-style'); // WooCommerce
-    wp_dequeue_style('storefront-gutenberg-blocks'); // Storefront theme
-}
-
-//  Removes the very annoying Try Gutenberg Panel.
-function remove_gutenberg_panel()
-{
-    remove_action('try_gutenberg_panel', 'wp_try_gutenberg_panel');
-}
-
-// Hides the very annoying Welcome Tips popup for Gutenberg.
-function remove_gutenberg_tips()
-{ ?>
-    <style>
-        .components-modal__frame.components-guide {
-            display: none !important;
-        }
-
-        .components-modal__screen-overlay {
-            display: none !important;
-        }
-    </style>
-<?php
-}
-
 // Init traduzione stringhe
 function theme_load_theme_textdomain()
 {

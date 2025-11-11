@@ -19,6 +19,11 @@ function extend_twig($twig)
         return sanitize_title($title);
     }));
 
+    // deduplicate array
+    $twig->addFilter(new \Twig\TwigFilter('unique', function ($array) {
+        return array_unique($array);
+    }));
+
     // shuffle
     $twig->addFilter(new Twig\TwigFilter('shuffle', function ($array) {
         if (is_a($array, 'Timber\PostQuery')) {

@@ -38,8 +38,6 @@ class StarterSite extends Site
 	public function add_to_context($context)
 	{
 		$context['foo']   = 'bar';
-		$context['stuff'] = 'I am a value set in your functions.php file';
-		$context['notes'] = 'These values are available everytime you call Timber::context();';
 		$context['menu']  = Timber::get_menu();
 		$context['site']  = $this;
 
@@ -47,6 +45,7 @@ class StarterSite extends Site
 		$context['site']  = $this;
 		$context['server'] = (object) $_SERVER;
 		$context['upload_dir'] = wp_get_upload_dir();
+		$context['logout_url'] = wp_logout_url(home_url());
 
 		// Menu
 		$context['top_menu'] = Timber::get_menu('top_menu');
@@ -63,10 +62,15 @@ class StarterSite extends Site
 			'posts_per_page' => -1,
 		])->to_array();
 
+		// Taxonomies
 		$context['categories'] = Timber::get_terms([
 			'taxonomy' => 'category',
 			'hide_empty' => true,
 		]);
+
+		// Archives
+		$context['posts_page'] = get_option('page_for_posts');
+		// $context['cpt_page'] = get_post_type_archive_link('cpt');
 
 		// Lingue
 		if (function_exists('icl_get_languages')) {
