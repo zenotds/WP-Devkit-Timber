@@ -1,0 +1,49 @@
+{
+	"theme": {
+		"name": "Theme name",
+		"slug": "theme-name",
+		"description": "Site Theme",
+		"author": "Francesco Selva",
+		"version": "1.0d8",
+		"textDomain": "theme"
+	},
+	"build": {
+		"useTailwind": true,
+		"browserSync": {
+			"proxy": "https://your-site.test",
+			"open": true,
+			"https": false,
+			"port": 3000,
+			"browsers": [
+				"firefox developer edition"
+			]
+		}
+	},
+	"gutenberg": {
+		"enabled": false,
+		"allowedSlugs": [],
+		"allowedIds": [],
+		"coreBlocks": true,
+		"customBlocks": false
+	},
+	"acf": {
+		"enableUniqueIds": true,
+		"enableWysiwygTweaks": true,
+		"enableGoogleMapField": false,
+		"googleMapApiKey": ""
+	},
+	"forms": {
+		"useContactForm7": true
+	},
+	"menus": {
+		"top_menu": true,
+		"main_menu": true,
+		"mobile_menu": true,
+		"footer_menu": true,
+		"credits_menu": true
+	},
+	"context": {
+		"preloadPosts": true,
+		"preloadCategories": true
+	}
+}

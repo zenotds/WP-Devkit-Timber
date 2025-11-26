@@ -8,6 +8,19 @@ import fs from "node:fs";
 import path from "node:path";
 import postcss from "postcss";
 
+const configPath = new URL("./devkit.config.json", import.meta.url);
+let devkitConfig = {};
+
+try {
+	devkitConfig = JSON.parse(fs.readFileSync(configPath, "utf8")) ?? {};
+} catch {
+	devkitConfig = {};
+}
+
+const buildConfig = devkitConfig.build ?? {};
+const tailwindEnabled = buildConfig.useTailwind !== false;
+const browserSyncConfig = buildConfig.browserSync ?? {};
+
 // Suppress deprecation warnings while keeping visibility for others.
 // Preserve support for the various process.emitWarning invocation signatures.
 const originalEmitWarning = process.emitWarning.bind(process);
@@ -35,6 +48,24 @@ const isProduction = process.env.NODE_ENV === "production";
 
 // BrowserSync instance for live reload
 const bs = browserSync.create();
+
+const resolvedBrowserSyncOptions = {
+	proxy: browserSyncConfig.proxy || "https://your-site.test",
+	open:
+		typeof browserSyncConfig.open === "boolean" ? browserSyncConfig.open : true,
+	https:
+		typeof browserSyncConfig.https === "boolean"
+			? browserSyncConfig.https
+			: false,
+	port:
+		typeof browserSyncConfig.port === "number" ? browserSyncConfig.port : 3000,
+};
+
+const browserList =
+	Array.isArray(browserSyncConfig.browsers) &&
+	browserSyncConfig.browsers.length > 0
+		? browserSyncConfig.browsers
+		: ["firefox developer edition"];
 
 // Function to update CSS version in the style.css file (only in production)
 function updateVersion() {
@@ -139,10 +170,15 @@ const postcssPlugin = {
 	setup(build) {
 		build.onLoad({ filter: /\.css$/ }, async (args) => {
 			const source = await fs.promises.readFile(args.path, "utf8");
-			const result = await postcss([
-				tailwindcssPostcss(),
-				autoprefixer(),
-			]).process(source, {
+			const processors = [];
+
+			if (tailwindEnabled) {
+				processors.push(tailwindcssPostcss());
+			}
+
+			processors.push(autoprefixer());
+
+			const result = await postcss(processors).process(source, {
 				from: args.path,
 			});
 			return { contents: result.css, loader: "css" };
@@ -244,9 +280,8 @@ if (!isProduction) {
 			console.log(`🔭 Watching for changes...\n`);
 
 			bs.init({
-				proxy: "https://your-site.test",
-				open: true,
-				browser: ["firefox developer edition"],
+				...resolvedBrowserSyncOptions,
+				browser: browserList,
 			});
 
 			chokidar

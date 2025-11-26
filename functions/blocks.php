@@ -3,19 +3,21 @@
 // CONFIGURAZIONE GUTENBERG
 // ============================================
 
+$gutenbergConfig = devkit_config_get('gutenberg', []);
+
 // Abilita o disabilita completamente Gutenberg
-define('GUTENBERG_ENABLED', false);
+define('GUTENBERG_ENABLED', (bool) ($gutenbergConfig['enabled'] ?? false));
 
 // Se Gutenberg è abilitato, limita a pagine/post specifici tramite slug o ID.
 // Lascia entrambi gli array vuoti per abilitarlo su tutti i tipi di post.
-define('GUTENBERG_ALLOWED_SLUGS', []); // Esempio: ['contacts', 'homepage']
-define('GUTENBERG_ALLOWED_IDS', []); // Esempio: [12, 45, 67]
+define('GUTENBERG_ALLOWED_SLUGS', $gutenbergConfig['allowedSlugs'] ?? []); // Esempio: ['contacts', 'homepage']
+define('GUTENBERG_ALLOWED_IDS', $gutenbergConfig['allowedIds'] ?? []); // Esempio: [12, 45, 67]
 
 // Abilita o disabilita i blocchi core/nativi di Gutenberg
-define('GUTENBERG_CORE_BLOCKS_ENABLED', true);
+define('GUTENBERG_CORE_BLOCKS_ENABLED', (bool) ($gutenbergConfig['coreBlocks'] ?? true));
 
 // Abilita o disabilita i blocchi personalizzati Timber/ACF
-define('GUTENBERG_CUSTOM_BLOCKS_ENABLED', false);
+define('GUTENBERG_CUSTOM_BLOCKS_ENABLED', (bool) ($gutenbergConfig['customBlocks'] ?? false));
 
 // ============================================
 // IMPLEMENTAZIONE

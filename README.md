@@ -21,17 +21,16 @@ A modern, opinionated WordPress theme development kit built on Timber, featuring
 
 ### Installation
 
-1. **Install Dependencies**
+1. **(Optional) Run the Installer**
+   ```bash
+   npm run setup
+   ```
+   Answer the prompts to set your theme name, BrowserSync proxy, Gutenberg preferences, Tailwind usage, and other defaults. Pressing enter keeps the detected defaults, so you can safely skip values or the entire step. You can re-run this at any time or edit `devkit.config.json` manually.
+
+2. **Install Dependencies**
    ```bash
    npm install
    composer install
-   ```
-
-2. **Configure Development URL**
-   
-   Edit `esbuild.js` at line 245 and set your local development domain:
-   ```javascript
-   const PROXY_URL = 'https://your-site.test';
    ```
 
 3. **Start Development**

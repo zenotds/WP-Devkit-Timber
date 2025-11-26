@@ -43,22 +43,22 @@
             {{ settings.company_name }}. Tutti i diritti riservati.
             {% if settings.company_vat %}
                 <div>
-                    {{ __('P.IVA/CF/RI', 'theme')}}:
+                    {{ __('P.IVA/CF/RI', theme_text_domain())}}:
                     {{ settings.company_vat }}
                 </div>
             {% endif %}
             {% if settings.company_rea %}
                 <div>
-                    {{ __('Numero REA', 'theme')}}:
+                    {{ __('Numero REA', theme_text_domain())}}:
                     {{ settings.company_rea }}
                 </div>
             {% endif %}
 
             {% if settings.company_capital %}
                 <div>
-                    {{ __('Capitale sociale', 'theme')}}: €
+                    {{ __('Capitale sociale', theme_text_domain())}}: €
                     {{ settings.company_capital }}
-                    {{ __('i.v.', 'theme')}}
+                    {{ __('i.v.', theme_text_domain())}}
                 </div>
             {% endif %}
         </div>
