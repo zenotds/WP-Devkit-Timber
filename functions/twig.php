@@ -14,6 +14,10 @@ add_filter('upload_mimes', 'add_custom_file_types_to_editor');
 // Add custom Twig filters and functions
 function extend_twig($twig)
 {
+    $twig->addFunction(new \Twig\TwigFunction('theme_text_domain', function () {
+        return defined('DEVKIT_TEXT_DOMAIN') ? DEVKIT_TEXT_DOMAIN : 'theme';
+    }));
+
     // convert string to slug
     $twig->addFilter(new Twig\TwigFilter('slug', function ($title) {
         return sanitize_title($title);

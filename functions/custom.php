@@ -21,7 +21,7 @@ add_action('init', function () {
 // Init traduzione stringhe
 function theme_load_theme_textdomain()
 {
-	load_theme_textdomain('theme', get_template_directory() . '/lang');
+	load_theme_textdomain(DEVKIT_TEXT_DOMAIN, get_template_directory() . '/lang');
 }
 add_action('after_setup_theme', 'theme_load_theme_textdomain');
 

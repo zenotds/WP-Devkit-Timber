@@ -1,5 +1,9 @@
 <?php
 
+if (!devkit_config_get('forms.useContactForm7', true)) {
+    return;
+}
+
 // Disattiva auto <p> di CF7
 add_filter('wpcf7_autop_or_not', '__return_false');
 

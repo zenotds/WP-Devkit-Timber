@@ -4,6 +4,7 @@
 	"description": "Zeno's WP DevKit",
 	"scripts": {
 		"postinstall": "ln -sf ../../../wp-config.php ./wp-config.php",
+		"setup": "node scripts/install.mjs",
 		"dev": "NODE_ENV=development node esbuild.js",
 		"watch": "npm run dev",
 		"prod": "NODE_ENV=production node esbuild.js",

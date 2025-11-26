@@ -37,6 +37,9 @@ class StarterSite extends Site
 	 */
 	public function add_to_context($context)
 	{
+		$menu_config = devkit_config_get('menus', []);
+		$context_config = devkit_config_get('context', []);
+
 		$context['foo']   = 'bar';
 		$context['menu']  = Timber::get_menu();
 		$context['site']  = $this;
@@ -49,25 +52,29 @@ class StarterSite extends Site
 		$context['is_blog_page'] = is_home();
 
 		// Menu
-		$context['top_menu'] = Timber::get_menu('top_menu');
-		$context['main_menu'] = Timber::get_menu('main_menu');
-		$context['mobile_menu'] = Timber::get_menu('mobile_menu');
-		$context['footer_menu'] = Timber::get_menu('footer_menu');
-		$context['credits_menu'] = Timber::get_menu('credits_menu');
+		$context['top_menu'] = ($menu_config['top_menu'] ?? true) ? Timber::get_menu('top_menu') : null;
+		$context['main_menu'] = ($menu_config['main_menu'] ?? true) ? Timber::get_menu('main_menu') : null;
+		$context['mobile_menu'] = ($menu_config['mobile_menu'] ?? true) ? Timber::get_menu('mobile_menu') : null;
+		$context['footer_menu'] = ($menu_config['footer_menu'] ?? true) ? Timber::get_menu('footer_menu') : null;
+		$context['credits_menu'] = ($menu_config['credits_menu'] ?? true) ? Timber::get_menu('credits_menu') : null;
 
 		// Collections
-		$context['posts'] = Timber::get_posts([
-			'post_type' => 'post',
-			'orderby' => 'date',
-			'order' => 'DESC',
-			'posts_per_page' => -1,
-		])->to_array();
+		$context['posts'] = ($context_config['preloadPosts'] ?? true)
+			? Timber::get_posts([
+				'post_type' => 'post',
+				'orderby' => 'date',
+				'order' => 'DESC',
+				'posts_per_page' => -1,
+			])->to_array()
+			: [];
 
 		// Taxonomies
-		$context['categories'] = Timber::get_terms([
-			'taxonomy' => 'category',
-			'hide_empty' => true,
-		]);
+		$context['categories'] = ($context_config['preloadCategories'] ?? true)
+			? Timber::get_terms([
+				'taxonomy' => 'category',
+				'hide_empty' => true,
+			])
+			: [];
 
 		// Archives
 		$context['posts_page'] = get_option('page_for_posts');
