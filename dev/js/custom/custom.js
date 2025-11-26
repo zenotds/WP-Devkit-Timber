@@ -4,7 +4,7 @@
  * This script provides modern, performant implementations of common web interactions.
  *
  * @author @zenotds
- * @version 2.0
+ * @version 2.1
  *
  * @example
  * // Import all modules
@@ -314,7 +314,42 @@ export function SmoothScroll(selector = '[href^="#"]', headerSelector = '.header
 	if (links.length === 0) return;
 
 	const header = document.querySelector(headerSelector);
-	const headerHeight = header?.clientHeight || 0;
+	let adjustmentTimeout = null;
+
+	const getHeaderOffset = () => {
+		if (!header) return 0;
+
+		// If the header is hidden by the autohide helper we don't need to offset anything.
+		const isHiddenByAutohide = header.classList.contains('is-autohide');
+		if (isHiddenByAutohide) return 0;
+
+		return header.getBoundingClientRect().height || 0;
+	};
+
+	const scrollToTarget = (targetElement) => {
+		const headerOffset = getHeaderOffset();
+		const targetPosition = targetElement.getBoundingClientRect().top + window.scrollY - headerOffset;
+
+		window.scrollTo({
+			top: targetPosition,
+			behavior: 'smooth'
+		});
+
+		if (adjustmentTimeout) {
+			window.clearTimeout(adjustmentTimeout);
+		}
+
+		// Re-align after the smooth scrolling finishes to counter layout shifts (e.g. lazy loaded forms)
+		adjustmentTimeout = window.setTimeout(() => {
+			const remainingOffset = targetElement.getBoundingClientRect().top - getHeaderOffset();
+			if (Math.abs(remainingOffset) > 4) {
+				window.scrollBy({
+					top: remainingOffset,
+					behavior: 'smooth'
+				});
+			}
+		}, 450);
+	};
 
 	const handleClick = function(event) {
 		const href = this.getAttribute('href');
@@ -327,12 +362,7 @@ export function SmoothScroll(selector = '[href^="#"]', headerSelector = '.header
 
 		event.preventDefault();
 
-		const targetPosition = targetElement.offsetTop - headerHeight;
-		
-		window.scroll({
-			top: targetPosition,
-			behavior: 'smooth'
-		});
+		scrollToTarget(targetElement);
 	};
 
 	links.forEach((link) => {
