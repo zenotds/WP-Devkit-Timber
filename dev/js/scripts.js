@@ -5,6 +5,7 @@ import focus from "@alpinejs/focus";
 import Alpine from "alpinejs";
 import { CountUp } from "countup.js";
 import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import Swiper from "swiper";
 import {
@@ -27,6 +28,15 @@ Vlitejs.registerProvider("youtube", VlitejsYoutube);
 Vlitejs.registerProvider("vimeo", VlitejsVimeo);
 Vlitejs.registerPlugin("volume", VlitejsVolume);
 Vlitejs.registerPlugin("mobile", VlitejsMobile);
+
+gsap.registerPlugin(ScrollTrigger);
+
+const reducedMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+).matches;
+
+// Shared Lenis instance — null when reduced motion is on or init failed
+let lenis = null;
 
 // Debug — set to false to silence logs
 const DEBUG = true;
@@ -76,21 +86,82 @@ function initAlpine() {
     window.Alpine = Alpine.start();
 }
 
+// Lenis driven by GSAP's ticker (single rAF loop) and synced with
+// ScrollTrigger so scroll-driven animations follow the smoothed scroll
 function initLenis() {
-    new Lenis({ autoRaf: true });
+    if (reducedMotion) return;
+    lenis = new Lenis();
+    lenis.on("scroll", ScrollTrigger.update);
+    gsap.ticker.add((time) => lenis.raf(time * 1000));
+    gsap.ticker.lagSmoothing(0);
 }
 
-function initCustom() {
-    SmoothScroll();
+// Anchor links scroll through Lenis so the easing matches the rest of the
+// page; falls back to the native handler when Lenis is off (reduced motion)
+function initAnchors() {
+    if (!lenis) {
+        SmoothScroll();
+        return;
+    }
+
+    const header = document.querySelector(".header");
+
+    document.addEventListener("click", (event) => {
+        const link = event.target.closest('a[href^="#"]');
+        if (!link) return;
+
+        const href = link.getAttribute("href");
+        if (!href || href === "#" || href.startsWith("#!")) return;
+
+        const target = document.querySelector(href);
+        if (!target) return;
+
+        event.preventDefault();
+        const offset = () => -(header?.offsetHeight ?? 0);
+        lenis.scrollTo(target, {
+            offset: offset(),
+            // Re-align once to counter layout shifts during the scroll
+            // (e.g. lazy-loaded forms growing above the target)
+            onComplete: () => {
+                const drift = target.getBoundingClientRect().top + offset();
+                if (Math.abs(drift) > 4) {
+                    lenis.scrollTo(target, { offset: offset() });
+                }
+            },
+        });
+    });
+}
+
+// Scroll reveals: page-builder blocks ([data-loop]) fade in on first view.
+// batch() staggers blocks that enter the viewport together; clearProps
+// removes the inline transform afterwards so sticky/positioned children
+// aren't affected.
+function initReveals() {
+    if (reducedMotion) return;
+
+    const blocks = gsap.utils.toArray("[data-loop]");
+    if (!blocks.length) return;
+
+    gsap.set(blocks, { autoAlpha: 0, y: 32 });
+
+    ScrollTrigger.batch(blocks, {
+        start: "top 85%",
+        once: true,
+        onEnter: (batch) =>
+            gsap.to(batch, {
+                autoAlpha: 1,
+                y: 0,
+                duration: 0.7,
+                ease: "power2.out",
+                stagger: 0.12,
+                clearProps: "all",
+            }),
+    });
 }
 
 function initGsap() {
-    // Make GSAP available globally for components
+    // Make GSAP available globally for components (ScrollTrigger registered at import)
     window.gsap = gsap;
-
-    // Register plugins here if needed
-    // gsap.registerPlugin(ScrollTrigger);
-
     window.dispatchEvent(new CustomEvent("gsap:ready", { detail: { gsap } }));
 }
 
@@ -231,9 +302,10 @@ ready(() => {
     safeInit("GSAP", initGsap);
     safeInit("Swiper", initSwiper);
     safeInit("CountUp", initCountUp);
+    safeInit("Anchors", initAnchors);
+    safeInit("Reveals", initReveals);
     safeInit("VenoBox", initVenoBox);
     safeInit("Video Players", initVideoPlayers);
-    safeInit("Custom Scripts", initCustom);
 
     showCredits();
     log("✨ Application ready!");
