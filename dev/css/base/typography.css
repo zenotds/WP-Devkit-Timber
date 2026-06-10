@@ -1,0 +1,158 @@
+@layer components {
+
+.typo-h {
+	@apply font-bold text-balance leading-tight text-verde;
+}
+
+.typo-l {
+	@apply text-balance font-normal text-xs leading-tight;
+}
+
+/* Rich text (WYSIWYG output) */
+.typo-r {
+	@apply leading-normal font-normal;
+
+	img {
+		max-width: 100%;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5 {
+		@apply font-bold text-balance leading-tight;
+	}
+
+	h2 {
+		font-size: var(--text-h2);
+	}
+
+	h3 {
+		font-size: var(--text-h3);
+	}
+
+	h4 {
+		font-size: var(--text-h4);
+	}
+
+	h5 {
+		font-size: var(--text-h5);
+	}
+
+	* + h2,
+	* + h3,
+	* + h4,
+	* + h5 {
+		@apply mt-8;
+	}
+
+	h2:has(+ *),
+	h3:has(+ *),
+	h4:has(+ *),
+	h5:has(+ *) {
+		@apply mb-2;
+	}
+
+	p {
+		@apply mb-4;
+
+		&:last-child {
+			@apply mb-0;
+		}
+	}
+
+	hr {
+		@apply my-6 border border-black/15;
+	}
+
+	a:not(.btn) {
+		@apply text-verde font-semibold underline;
+
+		&:hover {
+			@apply text-verde/50;
+		}
+	}
+
+	ul {
+		@apply mb-6 flex flex-col;
+
+		&:last-child {
+			@apply mb-0;
+		}
+
+		li {
+			@apply relative list-none mb-2 pl-5;
+
+			&::before {
+				content: "\e122";
+				font-family: var(--font-icons);
+				@apply absolute left-0 text-verde;
+				top: 0.15em;
+				line-height: 1;
+				width: 1em;
+				text-align: center;
+				font-style: normal;
+				font-variant: normal;
+				text-rendering: auto;
+				-webkit-font-smoothing: antialiased;
+			}
+		}
+
+		ul {
+			@apply mt-6 ml-6;
+		}
+	}
+
+	ol {
+		@apply mb-6 flex flex-col pl-4;
+
+		&:last-child {
+			@apply mb-0;
+		}
+
+		li {
+			@apply relative list-decimal mb-1 marker:font-bold;
+		}
+
+		ul,
+		ol {
+			@apply mt-6 ml-6;
+		}
+	}
+
+	blockquote {
+		@apply ml-12 leading-[1.2] text-balance text-verde mb-6;
+		font-size: clamp(1.25rem, 1rem + 1.25vw, 2rem);
+	}
+
+	table {
+		@apply w-full mb-4 align-top bg-white border border-current/20;
+
+		> :not(caption) > * > * {
+			@apply px-2.5 py-2.5 border-b border-current;
+		}
+
+		> tbody {
+			@apply align-baseline;
+		}
+
+		> thead {
+			@apply align-bottom;
+		}
+
+		.caption-top {
+			@apply caption-top;
+		}
+
+		&.table-striped > tbody > tr:nth-of-type(odd) > * {
+			@apply bg-neutral-100;
+		}
+
+		&.table-striped-columns > :not(caption) > tr > :nth-child(even) {
+			@apply bg-neutral-100;
+		}
+	}
+}
+
+} /* end @layer components */

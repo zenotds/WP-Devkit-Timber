@@ -84,7 +84,7 @@
 			}
 
 			&:checked {
-				@apply bg-green-500;
+				@apply bg-verde;
 			}
 		}
 
@@ -93,7 +93,7 @@
 				@apply font-semibold underline;
 
 				&:hover {
-					@apply text-green-500;
+					@apply text-verde;
 				}
 			}
 		}

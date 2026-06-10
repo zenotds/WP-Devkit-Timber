@@ -6,6 +6,7 @@
 
 /* Base */
 @import "./base/base";
+@import "./base/typography";
 @import "./base/custom";
 
 /* SwiperJS */
@@ -37,6 +38,10 @@
 	--breakpoint-3xl: 112rem;
 	--font-poppins: "Poppins", sans-serif;
 	--text-h1: clamp(2rem, 1.5rem + 2vw, 3.25rem);
+	--text-h2: clamp(1.75rem, 1.4rem + 1.5vw, 2.5rem);
+	--text-h3: clamp(1.5rem, 1.25rem + 1.25vw, 2rem);
+	--text-h4: clamp(1.25rem, 1.1rem + 0.75vw, 1.75rem);
+	--text-h5: clamp(1.125rem, 1rem + 0.5vw, 1.5rem);
 }
 
 /* Tailwind utilities */

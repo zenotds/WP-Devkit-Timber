@@ -217,12 +217,9 @@ function add_color_swatches_to_select()
 			// Method 2: JavaScript approach - modify select options after page load
 			$(document).ready(function() {
 
-				// Define your colors
+				// Define your colors (match the @theme palette in dev/css/styles.css)
 				var colorMap = {
-					'blu': '#003764',
-					'azzurro': '#0d5ea2',
-					'celeste': '#71b3e7',
-					'avio': '#4b7393',
+					'verde': '#609422',
 					'none': '#fff'
 				};
 
