@@ -31,6 +31,12 @@ function theme_enqueue_assets()
         }
         return $tag;
     }, 10, 2);
+
+    // Brand color from ACF options as CSS variable (pair with
+    // `--color-accent: var(--brand-color)` in the Tailwind @theme block)
+    // if (function_exists('get_field') && $brand_color = get_field('color', 'options')) {
+    //     wp_add_inline_style('theme-styles', ":root { --brand-color: {$brand_color}; }");
+    // }
 }
 
 // Preload critical assets

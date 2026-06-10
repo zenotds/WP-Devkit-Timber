@@ -7,6 +7,7 @@
 // Load Composer dependencies.
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/functions/twig.php';
+require_once __DIR__ . '/functions/avif.php';
 require_once __DIR__ . '/functions/acf.php';
 require_once __DIR__ . '/functions/blocks.php';
 require_once __DIR__ . '/functions/custom.php';

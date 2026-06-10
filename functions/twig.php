@@ -1,8 +1,5 @@
 <?php
 
-use Timber\Twig\FunctionWrapper;
-use Laminas\Diactoros\ServerRequestFactory;
-
 // Allow Twig files to be editable in the theme editor
 function add_custom_file_types_to_editor($file_types)
 {
@@ -11,174 +8,169 @@ function add_custom_file_types_to_editor($file_types)
 }
 add_filter('upload_mimes', 'add_custom_file_types_to_editor');
 
+/**
+ * Extract a video URL from an oEmbed iframe or a raw URL.
+ * Shared helper for the video_* Twig filters.
+ */
+function twig_video_url($input): ?string
+{
+    if (!is_string($input) || $input === '') {
+        return null;
+    }
+
+    if (preg_match('/<iframe[^>]+src="([^"]+)"/i', $input, $match)) {
+        return $match[1];
+    }
+
+    return filter_var($input, FILTER_VALIDATE_URL) ? $input : null;
+}
+
 // Add custom Twig filters and functions
 function extend_twig($twig)
 {
-    // convert string to slug
-    $twig->addFilter(new Twig\TwigFilter('slug', function ($title) {
-        return sanitize_title($title);
+    // Convert string to slug
+    $twig->addFilter(new Twig\TwigFilter('slug', 'sanitize_title'));
+
+    // Deduplicate array
+    $twig->addFilter(new Twig\TwigFilter('unique', function ($array) {
+        return is_array($array) ? array_unique($array) : $array;
     }));
 
-    // deduplicate array
-    $twig->addFilter(new \Twig\TwigFilter('unique', function ($array) {
-        return array_unique($array);
-    }));
-
-    // shuffle
+    // Shuffle array (supports PostQuery)
     $twig->addFilter(new Twig\TwigFilter('shuffle', function ($array) {
-        if (is_a($array, 'Timber\PostQuery')) {
-            $array = $array->get();
+        if ($array instanceof Timber\PostQuery) {
+            $array = $array->to_array();
+        }
+        if (!is_array($array)) {
+            return $array;
         }
         shuffle($array);
         return $array;
     }));
 
-    // iframe to url
-    $twig->addFilter(new Twig\TwigFilter('iframesrc', function ($string) {
-        $string = preg_match('/src="([^"]+)"/', $string, $match);
-        $url = $match[1];
-        return $url;
-    }));
+    // Video URL from oEmbed iframe or raw URL
+    $twig->addFilter(new Twig\TwigFilter('video_src', 'twig_video_url'));
 
-    // oembed videoID
-    $twig->addFilter(new Twig\TwigFilter('video_id', function ($string) {
-        // Extract the src URL from the iframe
-        preg_match('/src="([^"]+)"/', $string, $match);
-        $url = $match[1];
-
-        // Check for YouTube URL and extract the video ID
-        if (preg_match('/(?:youtube\.com\/embed\/|youtu\.be\/)([^\/\?\&]+)/', $url, $id_match)) {
-            return $id_match[1];
+    // Video provider (youtube | vimeo | null)
+    $twig->addFilter(new Twig\TwigFilter('video_provider', function ($input) {
+        $url = twig_video_url($input);
+        if (!$url) {
+            return null;
         }
-
-        // Check for Vimeo URL and extract the video ID
-        if (preg_match('/vimeo\.com\/video\/(\d+)/', $url, $id_match)) {
-            return $id_match[1];
+        if (preg_match('/(?:youtube(?:-nocookie)?\.com|youtu\.be)/i', $url)) {
+            return 'youtube';
         }
-
-        // Return null or an empty string if no valid video ID is found
+        if (preg_match('/vimeo\.com/i', $url)) {
+            return 'vimeo';
+        }
         return null;
     }));
 
-    // sortbykey
+    // Video ID from YouTube/Vimeo URLs (embed, watch, shorts, youtu.be, player.vimeo)
+    $twig->addFilter(new Twig\TwigFilter('video_id', function ($input) {
+        $url = twig_video_url($input);
+        if (!$url) {
+            return null;
+        }
+        if (preg_match('/(?:youtube(?:-nocookie)?\.com\/(?:embed\/|shorts\/|watch\?(?:.*&)?v=)|youtu\.be\/)([\w-]{6,})/i', $url, $match)) {
+            return $match[1];
+        }
+        if (preg_match('/vimeo\.com\/(?:video\/)?(\d+)/i', $url, $match)) {
+            return $match[1];
+        }
+        return null;
+    }));
+
+    // Sort array of objects/arrays by key (supports PostQuery)
     $twig->addFilter(new Twig\TwigFilter('sortby', function ($array, $key, $order = 'asc') {
+        if ($array instanceof Timber\PostQuery) {
+            $array = $array->to_array();
+        }
+        if (!is_array($array)) {
+            return $array;
+        }
         usort($array, function ($a, $b) use ($key, $order) {
-            if ($order === 'desc') {
-                return $b->{$key} <=> $a->{$key};
-            } else {
-                return $a->{$key} <=> $b->{$key};
-            }
+            $valA = is_array($a) ? ($a[$key] ?? null) : ($a->{$key} ?? null);
+            $valB = is_array($b) ? ($b[$key] ?? null) : ($b->{$key} ?? null);
+            return $order === 'desc' ? $valB <=> $valA : $valA <=> $valB;
         });
         return $array;
     }));
 
-    // Sort by term order
-    $twig->addFilter(new Twig\TwigFilter('sbt', function ($terms) {
-        usort($terms, function ($a, $b) {
-            return ((int) $a->term_order) <=> ((int) $b->term_order);
-        });
-        return $terms;
-    }));
+    // Inline SVG from theme path, absolute path or local URL
+    $twig->addFilter(new Twig\TwigFilter('svg', function ($source) {
+        static $cache = [];
 
-    // import SVG
-    $twig->addFilter(new \Twig\TwigFilter('svg', function ($source) {
-        // Handle relative paths from theme directory
-        if (!file_exists($source)) {
+        if (!is_string($source) || $source === '') {
+            return '';
+        }
+
+        if (isset($cache[$source])) {
+            return $cache[$source];
+        }
+
+        $path = $source;
+
+        // Convert local URLs (e.g. ACF image src) to filesystem paths
+        if (str_starts_with($path, 'http')) {
+            $uploads = wp_get_upload_dir();
+            $path = str_replace(
+                [$uploads['baseurl'], get_template_directory_uri()],
+                [$uploads['basedir'], get_template_directory()],
+                $path
+            );
+        }
+
+        // Handle paths relative to the theme directory
+        if (!file_exists($path)) {
             $theme_path = get_template_directory() . '/' . ltrim($source, '/');
             if (file_exists($theme_path)) {
-                $source = $theme_path;
+                $path = $theme_path;
             }
         }
 
-        // Check if file exists and is readable
-        if (!file_exists($source) || !is_readable($source)) {
-            return '<!-- SVG file not found: ' . esc_html($source) . ' -->';
+        if (!is_readable($path) || strtolower(pathinfo($path, PATHINFO_EXTENSION)) !== 'svg') {
+            return $cache[$source] = '<!-- SVG not found: ' . esc_html($source) . ' -->';
         }
 
-        // Verify it's an SVG file
-        $file_info = pathinfo($source);
-        if (strtolower($file_info['extension']) !== 'svg') {
-            return '<!-- Invalid file type. Expected SVG: ' . esc_html($source) . ' -->';
+        $content = file_get_contents($path);
+        if ($content === false || !str_contains($content, '<svg')) {
+            return $cache[$source] = '<!-- Invalid SVG: ' . esc_html($source) . ' -->';
         }
 
-        // Read and return SVG content
-        $svg_content = file_get_contents($source);
-
-        // Basic security: ensure it's valid SVG content
-        if ($svg_content === false || strpos($svg_content, '<svg') === false) {
-            return '<!-- Invalid SVG content: ' . esc_html($source) . ' -->';
-        }
-
-        return $svg_content;
+        return $cache[$source] = $content;
     }, ['is_safe' => ['html']]));
 
-    // Get PDF Preview
+    // PDF/attachment preview image
     $twig->addFilter(new Twig\TwigFilter('pdf', function ($attachment_id) {
         return wp_get_attachment_image_src($attachment_id, 'default');
     }));
 
-    // Readable Size
-    $twig->addFilter(new \Twig\TwigFilter('size', function ($bytes, $precision = 2) {
-        // The logic from your readableFilesize function
+    // Human readable filesize
+    $twig->addFilter(new Twig\TwigFilter('size', function ($bytes, $precision = 2) {
         if (!is_numeric($bytes) || $bytes < 0) {
-            throw new InvalidArgumentException('The value must be a non-negative number.');
+            return null;
         }
-
-        $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-
-        $bytes /= pow(1024, $pow);
-
-        return round($bytes, $precision) . ' ' . $units[$pow];
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $pow = $bytes ? min(floor(log($bytes) / log(1024)), count($units) - 1) : 0;
+        return round($bytes / (1024 ** $pow), $precision) . ' ' . $units[$pow];
     }));
 
-    // Get Filebird folder
-    $twig->addFilter(new Twig\TwigFilter('fvb', function ($attachment_id) {
-        global $wpdb;
+    // ACF get_field in Twig
+    $twig->addFunction(new Twig\TwigFunction('get_field', 'get_field'));
 
-        // Use wpdb->prefix to make the table names dynamic and universal
-        $attachment_table = $wpdb->prefix . 'fbv_attachment_folder';
-        $folder_table = $wpdb->prefix . 'fbv';
-
-        // Query to get the folder ID
-        $folder_id = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT folder_id FROM {$attachment_table} WHERE attachment_id = %d",
-                $attachment_id
-            )
-        );
-
-        // If folder ID is found, get the folder name
-        if ($folder_id) {
-            return $wpdb->get_var(
-                $wpdb->prepare(
-                    "SELECT name FROM {$folder_table} WHERE id = %d",
-                    $folder_id
-                )
-            );
-        }
-
-        return null; // Return null if no folder is found
-    }));
-
-    // Get field in twig
-    $twig->addFunction(new Twig\TwigFunction('get_field', function ($field_name) {
-        return get_field($field_name);
-    }));
-
-    // Generate uniqueID
-    $twig->addFunction(new Twig\TwigFunction('uniqueid', function () {
-        return uniqid();
-    }));
+    // Unique ID
+    $twig->addFunction(new Twig\TwigFunction('uniqueid', 'uniqid'));
 
     return $twig;
 }
 add_filter('timber/twig', 'extend_twig');
 
-// Add a request object from laminas-diactoros PSR-7 server request
+// Sanitized request object: {{ request.get.foo }} / {{ request.post.bar }}
 add_filter('timber/context', function ($context) {
-    $context['request'] = ServerRequestFactory::fromGlobals();
+    $context['request'] = (object) [
+        'get'  => map_deep(wp_unslash($_GET), 'sanitize_text_field'),
+        'post' => map_deep(wp_unslash($_POST), 'sanitize_text_field'),
+    ];
     return $context;
 });

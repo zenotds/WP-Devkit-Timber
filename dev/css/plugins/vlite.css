@@ -1,0 +1,19 @@
+/* vLitejs theming — map the player to the brand palette */
+.v-vlite {
+	--vlite-colorPrimary: var(--color-verde);
+}
+
+/* Poster covers the frame */
+.v-poster {
+	background-size: cover;
+}
+
+/* Big center play/pause button in the brand accent (control-bar icons stay white) */
+.v-bigPlay svg {
+	fill: var(--color-verde);
+}
+
+/* Accessibility — drop the default focus outlines on custom controls */
+.v-vlite :focus-visible {
+	outline: none;
+}
