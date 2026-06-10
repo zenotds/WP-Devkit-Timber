@@ -1,0 +1,18 @@
+{# Category archives — `category` is the current term (set in archive.php) #}
+{% extends "index.twig" %}
+
+{% block content %}
+
+	<header class="category-header">
+		<h1 class="title">{{ category.title|default(title) }}</h1>
+		{% if category.description %}
+			<div class="description prose">{{ category.description }}</div>
+		{% endif %}
+	</header>
+
+	{% for post in posts %}
+		{% include ['tease-'~post.post_type~'.twig', 'tease.twig'] %}
+	{% endfor %}
+
+	{% include 'partial/pagination.twig' with { pagination: posts.pagination({show_all: false, mid_size: 3, end_size: 2}) } %}
+{% endblock %}
