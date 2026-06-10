@@ -1,4 +1,4 @@
-<footer class="footer border-t border-dark/20 pt-8">
+<footer class="footer border-t border-black/15 pt-8">
     <div class="container mx-auto">
 
         <div class="wrapper grid grid-cols-3 gap-x-6 gap-y-12 mb-12">
@@ -25,7 +25,7 @@
             {% if settings.company_social %}
                 <div class="social-links flex items-start gap-4 col-span-3 lg:col-span-1 justify-start lg:justify-end">
                     {% for social in settings.company_social %}
-                        <a class="flex aspect-square h-12 w-12 items-center justify-center bg-green-500 text-3xl rounded-md text-white hover:bg-dark" href="{{ social.link }}" title="{{ social.social }}" target="_blank">
+                        <a class="flex aspect-square h-12 w-12 items-center justify-center bg-verde text-3xl rounded-md text-white hover:bg-verde/80" href="{{ social.link }}" title="{{ social.social }}" target="_blank" rel="noopener">
                             <i class="fab fa-{{ social.icon }}"></i>
                         </a>
                     {% endfor %}
@@ -33,7 +33,7 @@
             {% endif %}
         </div>
         {% if settings.footer_text %}
-            <div class="bio typo-r !text-sm mb-8">
+            <div class="bio typo-r text-sm! mb-8">
                 {{ settings.footer_text }}
             </div>
         {% endif %}

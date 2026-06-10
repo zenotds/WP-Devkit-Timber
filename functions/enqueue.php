@@ -47,7 +47,10 @@ function theme_preload_assets()
     $theme_version = wp_get_theme()->get('Version');
 ?>
     <link rel="preload" href="<?php echo get_template_directory_uri(); ?>/assets/css/styles.min.css?ver=<?php echo $theme_version; ?>" as="style">
+    <?php // Font preloads: uncomment once the woff2 files are in /assets/webfonts/ (e.g. FontAwesome Pro, added per project) ?>
+    <?php /*
     <link rel="preload" href="<?php echo get_template_directory_uri(); ?>/assets/webfonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="<?php echo get_template_directory_uri(); ?>/assets/webfonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+    */ ?>
 <?php
 }
