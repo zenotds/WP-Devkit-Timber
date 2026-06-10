@@ -159,6 +159,36 @@ function initReveals() {
     });
 }
 
+// Cover parallax: full-bleed header images ([data-parallax]) drift slower
+// than the scroll, scrubbed through the Lenis-synced ScrollTrigger. The
+// image is scaled up so the drift never reveals its edges; the wrapper
+// carries overflow-clip to contain it.
+function initParallax() {
+    if (reducedMotion) return;
+
+    for (const wrap of document.querySelectorAll("[data-parallax]")) {
+        // picture for images, .visual-video for vLite players
+        const media = wrap.querySelector("picture, .visual-video");
+        if (!media) continue;
+
+        gsap.fromTo(
+            media,
+            { yPercent: -8, scale: 1.2 },
+            {
+                yPercent: 8,
+                scale: 1.2,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: wrap,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: true,
+                },
+            },
+        );
+    }
+}
+
 function initGsap() {
     // Make GSAP available globally for components (ScrollTrigger registered at import)
     window.gsap = gsap;
@@ -304,6 +334,7 @@ ready(() => {
     safeInit("CountUp", initCountUp);
     safeInit("Anchors", initAnchors);
     safeInit("Reveals", initReveals);
+    safeInit("Parallax", initParallax);
     safeInit("VenoBox", initVenoBox);
     safeInit("Video Players", initVideoPlayers);
 
