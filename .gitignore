@@ -55,3 +55,8 @@ Thumbs.db
 # Composer
 vendor
 composer.lock
+
+# AI
+.claude
+.gemini
+.codex

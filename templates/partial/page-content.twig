@@ -1,0 +1,15 @@
+{#
+    Contenuti pagina — due sistemi disponibili, la scelta è di sviluppo:
+
+    1. ACF Flexible Content (gruppo "Contenuti", default qui sotto):
+       ogni layout renderizza templates/components/block-<layout>.twig
+
+    2. Blocchi Gutenberg (vedi functions/blocks.php e /blocks/):
+       sostituisci il loop con {{ post.content }}
+
+    I due sistemi possono convivere nello stesso progetto abilitando Gutenberg
+    solo su post specifici (GUTENBERG_ALLOWED_SLUGS / GUTENBERG_ALLOWED_IDS).
+#}
+{% for content in post.meta('content') %}
+    {% include "components/block-" ~ content.acf_fc_layout ~ ".twig" ignore missing %}
+{% endfor %}

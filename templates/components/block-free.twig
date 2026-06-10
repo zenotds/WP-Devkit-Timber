@@ -1,0 +1,11 @@
+{# Layout "free" del flexible content: contenuto WYSIWYG libero #}
+{% import "partial/macros.twig" as macros %}
+
+<section class="block-free{{ content.bg and content.bg != 'none' ? ' bg-' ~ content.bg }}" id="{{ content.section_id|default('section-' ~ content.unique_id) }}">
+    <div class="container">
+        {{ macros.intro(content) }}
+        {% if content.text %}
+            <div class="text prose">{{ content.text }}</div>
+        {% endif %}
+    </div>
+</section>

@@ -37,12 +37,9 @@ class StarterSite extends Site
 	 */
 	public function add_to_context($context)
 	{
-		$context['foo']   = 'bar';
-		$context['menu']  = Timber::get_menu();
-		$context['site']  = $this;
-
 		// Globals
 		$context['site']  = $this;
+		$context['menu']  = Timber::get_menu();
 		$context['server'] = (object) $_SERVER;
 		$context['upload_dir'] = wp_get_upload_dir();
 		$context['logout_url'] = wp_logout_url(home_url());
@@ -60,7 +57,7 @@ class StarterSite extends Site
 			'post_type' => 'post',
 			'orderby' => 'date',
 			'order' => 'DESC',
-			'posts_per_page' => -1,
+			'posts_per_page' => 20,
 		])->to_array();
 
 		// Taxonomies
@@ -145,6 +142,13 @@ class StarterSite extends Site
 		// );
 
 		add_theme_support('menus');
+
+		/*
+		 * Inject theme CSS inside the block editor iframe (apiVersion 3).
+		 * WordPress prefixes selectors with .editor-styles-wrapper automatically.
+		 */
+		add_theme_support('editor-styles');
+		add_editor_style('assets/css/styles.min.css');
 	}
 
 	/**

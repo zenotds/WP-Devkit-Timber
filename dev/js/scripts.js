@@ -1,9 +1,10 @@
-// =============================================================================
-// MAIN APPLICATION ENTRY POINT
-// =============================================================================
+// Main application entry point
 
 import collapse from "@alpinejs/collapse";
+import focus from "@alpinejs/focus";
 import Alpine from "alpinejs";
+import { CountUp } from "countup.js";
+import gsap from "gsap";
 import Lenis from "lenis";
 import Swiper from "swiper";
 import {
@@ -14,15 +15,20 @@ import {
     Navigation,
     Pagination
 } from "swiper/modules";
-import { PlyrLayout, VidstackPlayer } from "vidstack/global/player";
-// import { VidstackPlayer, VidstackPlayerLayout } from 'vidstack/global/player';
+import VenoBox from "venobox/src/venobox.esm.js";
+import Vlitejs from "vlitejs";
+import VlitejsMobile from "vlitejs/plugins/mobile";
+import VlitejsVolume from "vlitejs/plugins/volume-bar";
+import VlitejsVimeo from "vlitejs/providers/vimeo";
+import VlitejsYoutube from "vlitejs/providers/youtube";
 import { SmoothScroll } from "./custom/custom";
 
-// =============================================================================
-// DEBUG CONFIGURATION
-// =============================================================================
+Vlitejs.registerProvider("youtube", VlitejsYoutube);
+Vlitejs.registerProvider("vimeo", VlitejsVimeo);
+Vlitejs.registerPlugin("volume", VlitejsVolume);
+Vlitejs.registerPlugin("mobile", VlitejsMobile);
 
-// Set to false to disable debug messages
+// Debug — set to false to silence logs
 const DEBUG = true;
 
 function log(...args) {
@@ -33,14 +39,11 @@ function warn(...args) {
     if (DEBUG) console.warn(...args);
 }
 
-// Always show errors
 function error(...args) {
     console.error(...args);
 }
 
-// =============================================================================
-// UTILITIES
-// =============================================================================
+// Utilities
 
 function ready(callback) {
     if (document.readyState === "loading") {
@@ -59,12 +62,17 @@ function safeInit(name, initFunction) {
     }
 }
 
-// =============================================================================
-// INITIALIZATION FUNCTIONS
-// =============================================================================
+// vLite's YT/Vimeo providers mount by element id, so each needs a unique one
+let playerSeq = 0;
+function ensurePlayerId(el) {
+    if (!el.id) el.id = `vplayer-${++playerSeq}`;
+}
+
+// Init functions
 
 function initAlpine() {
-	Alpine.plugin(collapse);
+    Alpine.plugin(collapse);
+    Alpine.plugin(focus);
     window.Alpine = Alpine.start();
 }
 
@@ -76,20 +84,49 @@ function initCustom() {
     SmoothScroll();
 }
 
-async function initVideoPlayers() {
-    const players = document.querySelectorAll(".player");
+function initGsap() {
+    // Make GSAP available globally for components
+    window.gsap = gsap;
+
+    // Register plugins here if needed
+    // gsap.registerPlugin(ScrollTrigger);
+
+    window.dispatchEvent(new CustomEvent("gsap:ready", { detail: { gsap } }));
+}
+
+function initVenoBox() {
+    if (!document.querySelector(".venobox")) return;
+    new VenoBox({
+        selector: ".venobox",
+        spinner: "wave",
+        titleattr: "data-title",
+        titlePosition: "bottom",
+        autoplay: true,
+    });
+}
+
+// vLitejs players — see macros mp4() and embed() for the expected markup
+function initVideoPlayers() {
+    const players = document.querySelectorAll(".player:not([data-visual])");
 
     for (const el of players) {
-        const { src, title, poster } = el.dataset;
-        if (!src) continue;
+        const { title, provider, poster } = el.dataset;
+
+        const config = {
+            options: {
+                controls: true,
+                playsinline: true,
+                poster: poster || null,
+            },
+            plugins: ["volume", "mobile"],
+        };
+        if (provider) {
+            ensurePlayerId(el);
+            config.provider = provider;
+        }
 
         try {
-            await VidstackPlayer.create({
-                layout: new PlyrLayout(),
-                target: el,
-                src: src,
-                poster: poster,
-            });
+            new Vlitejs(el, config);
             log(`🎥 Player initialized: ${title || "Untitled"}`);
         } catch (err) {
             error(`Failed to initialize player:`, err);
@@ -109,7 +146,7 @@ function initSwiper() {
                 0: {
                     slidesPerView: 1,
                 },
-                576: {
+                640: {
                     slidesPerView: 2,
                 },
                 1200: {
@@ -122,6 +159,50 @@ function initSwiper() {
             },
         });
     }
+}
+
+// Animate numbers on scroll. Values are free text ("+300", ">5.000 kg"):
+// the non-numeric prefix/suffix is preserved, only the digits count up.
+function initCountUp() {
+    const els = document.querySelectorAll("[data-countup]");
+    if (!els.length) return;
+
+    const parse = (raw) => {
+        const match = raw.match(/^(\D*)([\d.,\s]*\d)(\D*)$/);
+        if (!match) return null;
+        const [, prefix, numStr, suffix] = match;
+        const end = parseInt(numStr.replace(/[.,\s]/g, ""), 10);
+        return Number.isNaN(end) ? null : { prefix, end, suffix };
+    };
+
+    const observer = new IntersectionObserver(
+        (entries, obs) => {
+            for (const entry of entries) {
+                if (!entry.isIntersecting) continue;
+                const el = entry.target;
+                obs.unobserve(el);
+
+                const data = parse(el.dataset.countup);
+                if (!data) continue;
+
+                const counter = new CountUp(el, data.end, {
+                    prefix: data.prefix,
+                    suffix: data.suffix,
+                    separator: ".",
+                    duration: 2,
+                });
+
+                if (counter.error) {
+                    error("CountUp error:", counter.error);
+                    continue;
+                }
+                counter.start();
+            }
+        },
+        { threshold: 0.4 },
+    );
+
+    for (const el of els) observer.observe(el);
 }
 
 function showCredits() {
@@ -140,26 +221,19 @@ function showCredits() {
     );
 }
 
-// =============================================================================
-// MAIN INITIALIZATION
-// =============================================================================
+// Boot
 
-ready(async () => {
+ready(() => {
     log("🚀 Starting application...");
 
-    // Initialize synchronous modules
     safeInit("Alpine", initAlpine);
     safeInit("Lenis", initLenis);
+    safeInit("GSAP", initGsap);
     safeInit("Swiper", initSwiper);
+    safeInit("CountUp", initCountUp);
+    safeInit("VenoBox", initVenoBox);
+    safeInit("Video Players", initVideoPlayers);
     safeInit("Custom Scripts", initCustom);
-
-    // Initialize async modules
-    try {
-        await initVideoPlayers();
-        log("✅ Video players initialized");
-    } catch (err) {
-        error("❌ Failed to initialize video players:", err);
-    }
 
     showCredits();
     log("✨ Application ready!");

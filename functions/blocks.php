@@ -8,58 +8,62 @@ define('GUTENBERG_ENABLED', false);
 
 // Se Gutenberg è abilitato, limita a pagine/post specifici tramite slug o ID.
 // Lascia entrambi gli array vuoti per abilitarlo su tutti i tipi di post.
+// Utile anche per setup misti: blocchi su alcune pagine, flexible content sulle altre.
 define('GUTENBERG_ALLOWED_SLUGS', []); // Esempio: ['contacts', 'homepage']
 define('GUTENBERG_ALLOWED_IDS', []); // Esempio: [12, 45, 67]
 
 // Abilita o disabilita i blocchi core/nativi di Gutenberg
 define('GUTENBERG_CORE_BLOCKS_ENABLED', true);
 
-// Abilita o disabilita i blocchi personalizzati Timber/ACF
+// Abilita o disabilita i blocchi personalizzati ACF/Timber (cartella /blocks/)
 define('GUTENBERG_CUSTOM_BLOCKS_ENABLED', false);
 
+// Namespace dei blocchi custom del tema (deve corrispondere a "name" nei block.json)
+define('GUTENBERG_BLOCKS_NAMESPACE', 'bizen');
+
+// Blocchi core consentiti negli InnerBlocks quando i core blocks sono disabilitati
+define('GUTENBERG_INNER_CORE_BLOCKS', [
+    'core/paragraph',
+    'core/heading',
+    'core/list',
+    'core/list-item',
+    'core/buttons',
+    'core/button',
+    'core/image',
+]);
+
 // ============================================
-// IMPLEMENTAZIONE
+// DISPONIBILITÀ EDITOR
 // ============================================
 
-/**
- * Controlla la disponibilità dell'editor Gutenberg
- */
 if (!GUTENBERG_ENABLED) {
     // Se la costante globale è false, disabilita Gutenberg ovunque.
     add_filter('use_block_editor_for_post_type', '__return_false', 10);
 } else {
     /**
      * Abilita Gutenberg solo per post, pagine o CPT specifici.
-     * Questa funzione viene eseguita per tutti i tipi di post.
-     * La logica è: disabilita di default, abilita solo se le condizioni sono soddisfatte.
+     * Con entrambi gli array vuoti, l'editor è attivo ovunque.
      */
-    function conditionally_enable_gutenberg($use_block_editor, $post) {
-        // Se non c'è un oggetto $post (es. su alcune schermate di amministrazione), non fare nulla.
+    function conditionally_enable_gutenberg($use_block_editor, $post)
+    {
         if (!$post) {
             return $use_block_editor;
         }
 
-        // Se entrambi gli array di ID e slug sono vuoti, significa che vogliamo abilitare Gutenberg ovunque.
         if (empty(GUTENBERG_ALLOWED_IDS) && empty(GUTENBERG_ALLOWED_SLUGS)) {
             return true;
         }
 
-        // Controlla se l'ID del post è nell'array degli ID consentiti.
         if (in_array($post->ID, GUTENBERG_ALLOWED_IDS)) {
-            return true; // Abilita Gutenberg
+            return true;
         }
 
-        // Controlla se lo slug del post (post_name) è nell'array degli slug consentiti.
         if (in_array($post->post_name, GUTENBERG_ALLOWED_SLUGS)) {
-            return true; // Abilita Gutenberg
+            return true;
         }
 
-        // Se nessuna delle condizioni sopra è soddisfatta, disabilita Gutenberg.
-        // Questo si applica a tutti i post, pagine e CPT che non corrispondono,
-        // incluse le schermate "Aggiungi Nuovo".
         return false;
     }
-    // Usiamo 'use_block_editor_for_post' che passa direttamente l'oggetto $post.
     add_filter('use_block_editor_for_post', 'conditionally_enable_gutenberg', 10, 2);
 }
 
@@ -67,7 +71,8 @@ if (!GUTENBERG_ENABLED) {
  * Rimuove gli stili dei blocchi core di Gutenberg dal frontend
  */
 if (GUTENBERG_ENABLED && !GUTENBERG_CORE_BLOCKS_ENABLED) {
-    function remove_block_css() {
+    function remove_block_css()
+    {
         wp_dequeue_style('wp-block-library'); // Core di WordPress
         wp_dequeue_style('wp-block-library-theme'); // Tema Core di WordPress
         wp_dequeue_style('wc-block-style'); // WooCommerce
@@ -76,72 +81,134 @@ if (GUTENBERG_ENABLED && !GUTENBERG_CORE_BLOCKS_ENABLED) {
     add_action('wp_enqueue_scripts', 'remove_block_css', 100);
 }
 
+// ============================================
+// BLOCCHI CUSTOM ACF + TIMBER
+// ============================================
+
 /**
- * Logica per i blocchi personalizzati Timber/ACF
+ * Raccoglie i blocchi custom dalla cartella /blocks/ (slug => path)
  */
-if (GUTENBERG_ENABLED && GUTENBERG_CUSTOM_BLOCKS_ENABLED) {
-    
-    // Funzione per raccogliere i blocchi personalizzati
-    function get_custom_blocks() {
-        $blocks = array();
-        $blocks_dir = get_template_directory() . '/blocks';
-        
-        if (is_dir($blocks_dir)) {
-            foreach (new DirectoryIterator($blocks_dir) as $item) {
-                if ($item->isDir() && !$item->isDot() && file_exists($item->getPathname() . '/block.json')) {
-                    $blocks[] = $item->getPathname();
+function get_custom_blocks(): array
+{
+    static $blocks = null;
+
+    if ($blocks === null) {
+        $blocks = [];
+        foreach (glob(get_template_directory() . '/blocks/*', GLOB_ONLYDIR) ?: [] as $dir) {
+            if (file_exists($dir . '/block.json')) {
+                $blocks[basename($dir)] = $dir;
+            }
+        }
+    }
+
+    return $blocks;
+}
+
+/**
+ * ACF JSON per-blocco: ogni blocco è un'unità autonoma (block.json + twig + fields.json).
+ * Questi filtri restano attivi anche con i blocchi disabilitati, così il sync ACF
+ * non segnala field group mancanti.
+ */
+add_filter('acf/settings/load_json', function ($paths) {
+    return array_merge($paths, array_values(get_custom_blocks()));
+});
+
+// Salva il field group nella cartella del blocco (location rule: block == bizen/<slug>)
+add_filter('acf/json/save_paths', function ($paths, $post) {
+    foreach ($post['location'] ?? [] as $group) {
+        foreach ($group as $rule) {
+            if ($rule['param'] === 'block' && str_starts_with($rule['value'], GUTENBERG_BLOCKS_NAMESPACE . '/')) {
+                $dir = get_template_directory() . '/blocks/' . substr($rule['value'], strlen(GUTENBERG_BLOCKS_NAMESPACE) + 1);
+                if (is_dir($dir)) {
+                    return [$dir];
                 }
             }
         }
-        
-        return $blocks;
     }
+    return $paths;
+}, 10, 2);
 
-    // Registrazione dei blocchi ACF personalizzati
-    function register_acf_blocks() {
-        $custom_blocks = get_custom_blocks();
-        
-        foreach ($custom_blocks as $block) {
-            register_block_type($block);
-        }
-    }
-    add_action('init', 'register_acf_blocks');
-
-    // Limitazione ai soli blocchi personalizzati se i blocchi core sono disabilitati
-    if (!GUTENBERG_CORE_BLOCKS_ENABLED) {
-        function allowed_block_types($allowed_blocks, $post) {
-            $custom_blocks = array();
-            
-            foreach (get_custom_blocks() as $block) {
-                // Estrai il nome del blocco dal percorso
-                $block_name = basename($block);
-                $custom_blocks[] = 'bizen/' . $block_name;
+// Nome file leggibile per i field group dei blocchi
+add_filter('acf/json/save_file_name', function ($filename, $post) {
+    foreach ($post['location'] ?? [] as $group) {
+        foreach ($group as $rule) {
+            if ($rule['param'] === 'block') {
+                return 'fields.json';
             }
-            
-            return $custom_blocks;
         }
-        add_filter('allowed_block_types_all', 'allowed_block_types', 10, 2);
+    }
+    return $filename;
+}, 10, 2);
+
+/**
+ * Render callback generico: ogni blocco renderizza blocks/<slug>/<slug>.twig
+ * via Timber. Firma ACF: il primo parametro è l'array $block.
+ */
+function bizen_block_render($block, $content = '', $is_preview = false, $post_id = 0, $wp_block = null, $context = false)
+{
+    $slug = str_replace(GUTENBERG_BLOCKS_NAMESPACE . '/', '', $block['name']);
+
+    // Screenshot di anteprima nell'inserter (vedi "example" in block.json)
+    if ($is_preview && !empty($block['data']['is_example'])) {
+        $preview = get_template_directory() . '/blocks/' . $slug . '/preview.png';
+        if (file_exists($preview)) {
+            echo '<img src="' . esc_url(get_template_directory_uri() . '/blocks/' . $slug . '/preview.png') . '" style="width:100%;height:auto;display:block;">';
+            return;
+        }
     }
 
-    // Callback di rendering per i blocchi Timber/ACF
-    function block_render_callback($attributes, $content = '', $is_preview = false, $post_id = 0, $wp_block = null) {
-        // Crea lo slug del blocco usando la proprietà 'name' in block.json
-        $slug = str_replace('bizen/', '', $attributes['name']);
-        $context = Timber::context();
+    $ctx = Timber\Timber::context();
+    $ctx['block'] = $block;
+    $ctx['fields'] = function_exists('get_fields') ? (get_fields() ?: []) : [];
+    $ctx['is_preview'] = $is_preview;
+    $ctx['post_id'] = $post_id;
+    $ctx['content'] = $content;
 
-        // Memorizza gli attributi del blocco
-        $context['attributes'] = $attributes;
+    // Attributi comodi pre-calcolati
+    $ctx['block_id'] = !empty($block['anchor']) ? $block['anchor'] : 'block-' . $block['id'];
+    $ctx['classes'] = implode(' ', array_filter([
+        'block-' . $slug,
+        $block['className'] ?? '',
+        !empty($block['align']) ? 'align' . $block['align'] : '',
+    ]));
 
-        // Memorizza i valori dei campi ACF
-        $context['fields'] = get_fields();
+    Timber\Timber::render('@blocks/' . $slug . '/' . $slug . '.twig', $ctx);
+}
 
-        // Memorizza se il blocco è in modalità anteprima o frontend
-        $context['is_preview'] = $is_preview;
+if (GUTENBERG_ENABLED && GUTENBERG_CUSTOM_BLOCKS_ENABLED) {
 
-        // Renderizza il blocco
-        Timber::render(
-            'blocks/' . $slug . '/' . $slug . '.twig',
-            $context
-        );
+    // Registrazione dei blocchi via block.json
+    add_action('init', function () {
+        foreach (get_custom_blocks() as $path) {
+            register_block_type($path);
+        }
+    });
+
+    // Categoria custom del tema nell'inserter
+    add_filter('block_categories_all', function ($categories) {
+        array_unshift($categories, [
+            'slug' => GUTENBERG_BLOCKS_NAMESPACE,
+            'title' => __('Blocchi tema', 'devkit'),
+            'icon' => 'layout',
+        ]);
+        return $categories;
+    });
+
+    // Namespace Twig @blocks per i template dei blocchi
+    add_filter('timber/locations', function ($paths) {
+        $paths['blocks'] = [get_template_directory() . '/blocks'];
+        return $paths;
+    });
+
+    // Con i core blocks disabilitati, limita l'inserter ai blocchi custom
+    // più i core necessari agli InnerBlocks
+    if (!GUTENBERG_CORE_BLOCKS_ENABLED) {
+        add_filter('allowed_block_types_all', function ($allowed_blocks, $context) {
+            $custom_blocks = array_map(
+                fn($slug) => GUTENBERG_BLOCKS_NAMESPACE . '/' . $slug,
+                array_keys(get_custom_blocks())
+            );
+            return array_merge($custom_blocks, GUTENBERG_INNER_CORE_BLOCKS);
+        }, 10, 2);
     }
 }

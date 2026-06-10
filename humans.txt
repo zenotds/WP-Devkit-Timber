@@ -9,4 +9,4 @@ https://www.bizen.it
 Software: Built with [Timber](https://upstatement.com/timber/)
 Coded by: Francesco Selva
 CMS: Wordpress
-Tools: esbuild, tailwind, plyr, swiperjs, glightbox
+Tools: esbuild, tailwind, vlitejs, swiperjs, venobox

@@ -1,30 +1,34 @@
 /* Tailwind */
 @import "tailwindcss";
 
+/* Lenis */
+@import "./plugins/lenis";
+
 /* Base */
 @import "./base/base";
 @import "./base/custom";
 
+/* SwiperJS */
+/* @import "../../node_modules/swiper/swiper"; */
+/* @import "../../node_modules/swiper/modules/pagination"; */
+/* @import "../../node_modules/swiper/modules/navigation"; */
+/* @import "../../node_modules/swiper/modules/effect-fade"; */
+/* @import "./plugins/swiper"; */
+
+/* vLitejs player */
+@import "../../node_modules/vlitejs/dist/vlite.css";
+@import "../../node_modules/vlitejs/dist/plugins/volume-bar.css";
+@import "./plugins/vlite";
+
+/* VenoBox lightbox */
+@import "../../node_modules/venobox/dist/venobox.min.css";
+@import "./plugins/venobox";
+
 /* Partial */
+@import "./partial/buttons";
+@import "./partial/forms";
 @import "./partial/main-menu";
 @import "./partial/mobile-menu";
-
-/* SwiperJS */
-/* @import '../../node_modules/swiper/swiper'; */
-/* @import '../../node_modules/swiper/modules/pagination'; */
-/* @import '../../node_modules/swiper/modules/navigation'; */
-/* @import '../../node_modules/swiper/modules/effect-fade'; */
-/* @import '../../node_modules/swiper/modules/thumbs'; */
-/* @import './plugins/swiper'; */
-
-/* Plyr by Vidstack */
-/* @import '../../node_modules/vidstack/player/styles/plyr/theme.css';
-@import '../../node_modules/vidstack/player/styles/base.css';
-@import './plugins/plyr'; */
-
-/* Vidstack */
-/* @import '../../node_modules/vidstack/player/styles/default/theme.css'; */
-/* @import '../../node_modules/vidstack/player/styles/default/layouts/video.css'; */
 
 /* Tailwind theme variables */
 @theme {
@@ -48,6 +52,4 @@
 :root {
 	--font-icons: "Font Awesome 6 Pro";
 	--font-brands: "Font Awesome 6 Brands";
-	--plyr-color-main: var(--color-verde);
-	--plyr-border-radius: 0;
 }
