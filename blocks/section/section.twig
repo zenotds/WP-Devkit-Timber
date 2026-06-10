@@ -2,7 +2,7 @@
     Blocco demo "Sezione" — contenitore generico con titolo e InnerBlocks.
     Context disponibile: block, fields, is_preview, post_id, content, block_id, classes
 #}
-<section class="{{ classes }}{{ fields.bg and fields.bg != 'none' ? ' bg-' ~ fields.bg }}" id="{{ block_id }}">
+<section class="{{ classes }}{{ fields.bg and fields.bg != 'none' ? ' bg-' ~ fields.bg }}" id="{{ block_id }}"{% if not is_preview %} data-loop{% endif %}>
     <div class="container">
         {% if fields.title %}
             {% set tag = fields.tag|default('h2') %}
