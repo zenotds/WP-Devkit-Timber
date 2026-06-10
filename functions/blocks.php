@@ -188,7 +188,7 @@ if (GUTENBERG_ENABLED && GUTENBERG_CUSTOM_BLOCKS_ENABLED) {
     add_filter('block_categories_all', function ($categories) {
         array_unshift($categories, [
             'slug' => GUTENBERG_BLOCKS_NAMESPACE,
-            'title' => __('Blocchi tema', 'devkit'),
+            'title' => __('Blocchi tema', 'theme'),
             'icon' => 'layout',
         ]);
         return $categories;

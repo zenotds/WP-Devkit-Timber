@@ -1,87 +1,111 @@
 {% macro nav_item(item) %}
-    <div class="nav-item {% if item.current or 'current-menu-ancestor' in item.class or 'current-menu-parent' in item.class %}active{% endif %} {{ item.class }} flex border-b border-dark/20 hover:text-green-500 p-4 min-h-10">
-        <a class="nav-link font-base relative flex w-full self-center py-2 leading-none font-semibold whitespace-normal" href="{{ item.url }}" target="{{ item.target }}">
+    <div class="nav-item {% if item.current or 'current-menu-ancestor' in item.class or 'current-menu-parent' in item.class %}active{% endif %} {{ item.class }} flex border-b border-black/15 hover:text-verde p-4 min-h-10 gap-4" role="none">
+        <a class="nav-link font-base relative flex w-full self-center py-2 leading-none font-semibold whitespace-normal" href="{{ item.url }}" target="{{ item.target }}" role="menuitem" {% if item.current %}aria-current="page"{% endif %}>
             {{ item.name }}
         </a>
         {% if item.children %}
-            <button class="menu-toggle flex h-10 w-10 flex-shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-green-500 p-0 tracking-normal text-white hover:bg-dark" @click="$dispatch('menu-{{ item.id }}'); offcanvas = false" aria-label="Back">
-                <i class="fal fa-angle-right"></i>
+            <button class="menu-toggle flex h-10 w-10 shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-verde p-0 tracking-normal text-white hover:bg-verde/80" @click="$dispatch('menu-{{ item.id }}')" aria-label="{{ __('Apri sottomenu', 'theme') }} {{ item.name }}" aria-controls="menu-{{ item.id }}" aria-expanded="false">
+                <i class="fal fa-angle-right" aria-hidden="true"></i>
             </button>
         {% endif %}
     </div>
 {% endmacro %}
 
 {% macro offcanvas(item, id_prefix) %}
-    {% if item.master_object.status == 'publish' %}
-        {% if item.children %}
+    {% if item.children %}
 
-            <div id="{{ id_prefix }}{{ item.id }}" x-data="{ offcanvas: false }" class="offcanvas" :class="{ 'active': offcanvas }" x-on:{{ 'menu-' ~ item.id }}.window="offcanvas = !offcanvas" @keydown.escape.window="offcanvas = false">
+        <div id="{{ id_prefix }}{{ item.id }}" x-data="{ offcanvas: false }" class="offcanvas" :class="{ 'active': offcanvas }" x-on:{{ 'menu-' ~ item.id }}.window="offcanvas = !offcanvas" @keydown.escape.window="offcanvas = false">
 
-                <div class="backdrop fixed inset-0 bg-dark/80 z-[1000] transition-all duration-500" x-show="offcanvas" @click="offcanvas = false"></div>
+            <div class="backdrop fixed inset-0 bg-black/80 z-1000 transition-all duration-500" x-show="offcanvas" @click="offcanvas = false" aria-hidden="true"></div>
 
-                <div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-[1000] overflow-y-auto transition-all duration-500 max-w-full w-100" :class="{ 'active': offcanvas }">
+            <div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-1000 overflow-y-auto transition-all duration-500 max-w-full w-100" :class="{ 'active': offcanvas }" role="dialog" aria-modal="true" aria-labelledby="submenu-title-{{ item.id }}" x-trap.inert.noscroll="offcanvas">
 
-                    <div class="header border-b border-dark/20 flex items-center p-4">
-                        <div class="action close me-auto flex h-10 w-10 flex-shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-green-500 p-0 tracking-normal text-white hover:bg-dark" @click="$dispatch('{% if item.menu_item_parent == '0' %}mobile-menu{% else %}menu-{{ item.menu_item_parent }}{% endif %}'); offcanvas = false" aria-label="Close">
-                            <i class="far fa-arrow-left"></i>
-                        </div>
-                        <span class="current font-semibold text-lg uppercase">
-                            {{ item.title }}
-                        </span>
-                    </div>
-                    
+                <div class="header border-b border-black/15 flex items-center p-4">
+                    <button class="action close me-auto flex h-10 w-10 shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-verde p-0 tracking-normal text-white hover:bg-verde/80" @click="offcanvas = false" aria-label="{{ __('Torna indietro', 'theme') }}">
+                        <i class="far fa-arrow-left" aria-hidden="true"></i>
+                    </button>
+                    <span id="submenu-title-{{ item.id }}" class="current font-semibold text-lg uppercase">
+                        {{ item.title }}
+                    </span>
+                </div>
 
-                    <div class="body bg-white flex flex-col">
+                <div class="body bg-white flex flex-col">
 
-                        <nav class="mobile-navigation grow overflow-auto">
-                            {% for item in item.children %}
-                                {{ _self.nav_item(item) }}
-                            {% endfor %}
-                        </nav>
-
-                    </div>
+                    <nav class="mobile-navigation grow overflow-auto" role="menu" aria-label="{{ item.title }}">
+                        {% for child in item.children %}
+                            {{ _self.nav_item(child) }}
+                        {% endfor %}
+                    </nav>
 
                 </div>
+
             </div>
+        </div>
 
-            {% for child in item.children %}
-                {{ _self.offcanvas(child, id_prefix) }}
-            {% endfor %}
+        {% for child in item.children %}
+            {{ _self.offcanvas(child, id_prefix) }}
+        {% endfor %}
 
-        {% endif %}
     {% endif %}
 {% endmacro %}
 
 <div id="mobile-menu" x-data="{ offcanvas: false }" class="offcanvas" :class="{ 'active': offcanvas }" x-on:mobile-menu.window="offcanvas = !offcanvas" @keydown.escape.window="offcanvas = false">
 
-    <div class="backdrop fixed inset-0 bg-dark/80 z-[1000] transition-all duration-500" x-show="offcanvas" @click="offcanvas = false"></div>
+    <div class="backdrop fixed inset-0 bg-black/80 z-1000 transition-all duration-500" x-show="offcanvas" @click="offcanvas = false" aria-hidden="true"></div>
 
-    <div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-[1000] overflow-y-auto transition-all duration-500 max-w-full w-100" :class="{ 'active': offcanvas }">
+    <div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-1000 overflow-y-auto transition-all duration-500 max-w-full w-100" :class="{ 'active': offcanvas }" role="dialog" aria-modal="true" aria-labelledby="mobile-menu-title" x-trap.inert.noscroll="offcanvas">
 
-        <div class="header border-b border-dark/20 flex items-center p-4">
+        <div class="header border-b border-black/15 flex items-center p-4">
 
-            <button class="action close me-auto flex h-10 w-10 flex-shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-green-500 p-0 tracking-normal text-white hover:bg-dark" @click="offcanvas = false" aria-label="Close">
-                <i class="far fa-times"></i>
+            <button class="action close me-auto flex h-10 w-10 shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-verde p-0 tracking-normal text-white hover:bg-verde/80" @click="offcanvas = false" aria-label="{{ __('Chiudi menu', 'theme') }}">
+                <i class="far fa-times" aria-hidden="true"></i>
             </button>
 
-            <a href="{{ site.url }}" class="logo flex m-0" aria-label="Go to homepage">
-                <img src="{{ settings.header_logo }}" class="logo-image h-18 w-auto" width="125" height="72" alt="{{ site.title }}">
+            <a href="{{ site.url }}" class="logo flex m-0" aria-label="{{ __('Vai alla homepage', 'theme') }}">
+                <img src="{{ settings.header_logo|towebp|resize(200) }}" class="logo-image h-14 w-auto" width="125" height="72" alt="{{ site.title }}">
             </a>
         </div>
 
         <div class="body bg-white flex flex-col">
 
-            <div class="mobile-navigation grow overflow-auto">
-                {% for item in main_menu.items %}
+            {# Utility: top menu links #}
+            {% if top_menu.items %}
+                <div class="mobile-utility top-menu bg-verde text-white flex flex-col" role="menu" aria-label="{{ __('Menu secondario', 'theme') }}">
+                    {% for item in top_menu.items %}
+                        <a class="group flex items-center gap-4 p-4 min-h-10 font-semibold leading-none text-white hover:text-white/70 {% if not loop.last %}border-b border-white/15{% endif %}" href="{{ item.link }}" target="{{ item.target }}" role="menuitem">
+                            {{ item.title }}
+                            <i class="fal fa-arrow-right ml-auto w-10! text-center text-base" aria-hidden="true"></i>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <nav class="mobile-navigation grow overflow-auto" role="menu" aria-label="{{ __('Menu principale', 'theme') }}">
+                <h2 id="mobile-menu-title" class="sr-only">{{ __('Menu principale', 'theme') }}</h2>
+                {% for item in mobile_menu.items|default(main_menu.items) %}
                     {{ _self.nav_item(item) }}
                 {% endfor %}
-            </div>
+            </nav>
+
+            {# Social (ACF options repeater: social, icon, link) #}
+            {% if settings.company_social %}
+                <div class="mobile-social flex items-center gap-4 p-4 bg-neutral-100">
+                    <span class="font-semibold">{{ __('Seguici', 'theme') }}</span>
+                    <div class="social-links flex items-center gap-2 ms-auto" role="group" aria-label="{{ __('Seguici', 'theme') }}">
+                        {% for social in settings.company_social %}
+                            <a class="flex h-10 w-10 items-center justify-center rounded bg-verde text-lg text-white hover:bg-verde/80" href="{{ social.link }}" title="{{ social.social }}" target="_blank" rel="noopener">
+                                <i class="fab fa-{{ social.icon }}" aria-hidden="true"></i>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
 
         </div>
 
     </div>
 </div>
 
-{% for item in main_menu.items %}
+{% for item in mobile_menu.items|default(main_menu.items) %}
     {{ _self.offcanvas(item, 'menu-') }}
 {% endfor %}

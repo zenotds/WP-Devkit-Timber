@@ -29,6 +29,7 @@
 @import "./partial/forms";
 @import "./partial/main-menu";
 @import "./partial/mobile-menu";
+@import "./partial/pagination";
 
 /* Tailwind theme variables */
 @theme {

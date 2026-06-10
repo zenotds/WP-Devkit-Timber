@@ -1,64 +1,94 @@
 {% if posts.pagination.pages is not empty %}
-    <nav class="pagination-block">
-        <ul class="pagination">
+    <section class="pager">
+        <div class="container">
 
-            {# First #}
-            {% if posts.pagination.pages|first and posts.pagination.pages|first.current != true %}
-                <li class="first btn">
-                    <a href="{{ posts.pagination.pages|first.link }}">First</a>
-                </li>
-            {% else %}
-                <li class="first btn disabled">
-                    <button disabled>First</button>
-                </li>
-            {% endif %}
+            <nav class="pagination-block">
+                <ul class="pagination flex items-center justify-center gap-2">
 
-            {# Previous #}
-            {% if posts.pagination.prev %}
-                <li class="prev btn">
-                    <a href="{{ posts.pagination.prev.link }}">Previous</a>
-                </li>
-            {% else %}
-                <li class="prev btn disabled">
-                    <button disabled>Previous</button>
-                </li>
-            {% endif %}
+                    {# First #}
+                    {% if posts.pagination.pages|first and posts.pagination.pages|first.current != true %}
+                        <li class="first">
+                            <a href="{{ posts.pagination.pages|first.link }}">
+                                <span class="sr-only">First</span>
+                                <i class="far fa-chevrons-left" aria-hidden="true"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="first disabled">
+                            <button disabled>
+                                <span class="sr-only">First</span>
+                                <i class="far fa-chevrons-left" aria-hidden="true"></i>
+                            </button>
+                        </li>
+                    {% endif %}
 
-            {# Pages #}
-            {% for page in posts.pagination.pages %}
-                {% if page.link %}
-                    <li>
-                        <a href="{{ page.link }}" class="{{ page.class }}">{{ page.title }}</a>
-                    </li>
-                {% else %}
-                    <li class="current">
-                        <span class="{{ page.class }}">{{ page.title }}</span>
-                    </li>
-                {% endif %}
-            {% endfor %}
+                    {# Previous #}
+                    {% if posts.pagination.prev %}
+                        <li class="prev">
+                            <a href="{{ posts.pagination.prev.link }}">
+                                <span class="sr-only">Previous</span>
+                                <i class="far fa-chevron-left" aria-hidden="true"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="prev disabled">
+                            <button disabled>
+                                <span class="sr-only">Previous</span>
+                                <i class="far fa-chevron-left" aria-hidden="true"></i>
+                            </button>
+                        </li>
+                    {% endif %}
 
-            {# Next #}
-            {% if posts.pagination.next %}
-                <li class="next btn">
-                    <a href="{{ posts.pagination.next.link }}">Next</a>
-                </li>
-            {% else %}
-                <li class="next btn disabled">
-                    <button disabled>Next</button>
-                </li>
-            {% endif %}
+                    {# Pages #}
+                    {% for page in posts.pagination.pages %}
+                        {% if page.link %}
+                            <li>
+                                <a href="{{ page.link }}" class="{{ page.class }}">{{ page.title }}</a>
+                            </li>
+                        {% else %}
+                            <li class="current">
+                                <span class="{{ page.class }}">{{ page.title }}</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
 
-            {# Last #}
-            {% if posts.pagination.pages|last and posts.pagination.pages|last.current != true %}
-                <li class="last btn">
-                    <a href="{{ posts.pagination.pages|last.link }}">Last</a>
-                </li>
-            {% else %}
-                <li class="last btn disabled">
-                    <button disabled>Last</button>
-                </li>
-            {% endif %}
+                    {# Next #}
+                    {% if posts.pagination.next %}
+                        <li class="next">
+                            <a href="{{ posts.pagination.next.link }}">
+                                <span class="sr-only">Next</span>
+                                <i class="far fa-chevron-right" aria-hidden="true"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="next disabled">
+                            <button disabled>
+                                <span class="sr-only">Next</span>
+                                <i class="far fa-chevron-right" aria-hidden="true"></i>
+                            </button>
+                        </li>
+                    {% endif %}
 
-        </ul>
-    </nav>
+                    {# Last #}
+                    {% if posts.pagination.pages|last and posts.pagination.pages|last.current != true %}
+                        <li class="last">
+                            <a href="{{ posts.pagination.pages|last.link }}">
+                                <span class="sr-only">Last</span>
+                                <i class="far fa-chevrons-right" aria-hidden="true"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="last disabled">
+                            <button disabled>
+                                <span class="sr-only">Last</span>
+                                <i class="far fa-chevrons-right" aria-hidden="true"></i>
+                            </button>
+                        </li>
+                    {% endif %}
+
+                </ul>
+            </nav>
+
+        </div>
+    </section>
 {% endif %}

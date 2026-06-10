@@ -1,0 +1,9 @@
+{# Search bar boilerplate — point the form at site.url, WordPress handles ?s= #}
+<div class="search-wrapper hidden items-center sm:grid lg:hidden xl:grid">
+    <form method="get" role="search" action="{{ site.url }}" class="search-form flex items-center">
+        <input class="flex h-9 w-48 items-center rounded-none border-0 bg-neutral-100 px-4 py-2 text-sm leading-none text-neutral-900 transition-all duration-300 placeholder:text-neutral-500 focus:bg-white focus:outline-2 focus:outline-verde" type="text" placeholder="{{ __('Cerca nel sito', 'theme') }}" aria-label="{{ __('Cosa cerchi?', 'theme') }}" name="s">
+        <button class="-ms-9 flex h-9 w-9 cursor-pointer items-center justify-center px-4 py-2 text-base text-neutral-500 transition-all duration-300 hover:text-verde" type="submit" aria-label="{{ __('Avvia ricerca', 'theme') }}">
+            <i class="fa fa-search" aria-hidden="true"></i>
+        </button>
+    </form>
+</div>

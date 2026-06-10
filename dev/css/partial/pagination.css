@@ -1,0 +1,45 @@
+.pager {
+    .pagination {
+        li {
+            a,
+            button,
+            span:not(.dots) {
+                @apply flex min-h-10 min-w-10 items-center justify-center rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm font-bold text-verde transition-colors duration-200;
+                @apply hover:border-verde hover:bg-verde hover:text-white;
+                @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-verde;
+                @apply disabled:pointer-events-none disabled:border-neutral-200 disabled:bg-white disabled:text-neutral-400 disabled:opacity-60;
+            }
+
+            /* First/Last skip links not needed */
+            &.first,
+            &.last {
+                @apply hidden;
+            }
+
+            /* Arrows sit a touch quieter than the page numbers until hovered */
+            &.first,
+            &.prev,
+            &.next,
+            &.last {
+                a,
+                button {
+                    @apply text-neutral-900 hover:text-white;
+                }
+            }
+
+            /* Active page */
+            &.current {
+                a,
+                button,
+                span:not(.dots) {
+                    @apply border-verde bg-verde text-white;
+                }
+            }
+
+            /* Ellipsis */
+            span.dots {
+                @apply flex min-h-10 min-w-6 items-center justify-center text-neutral-900;
+            }
+        }
+    }
+}
