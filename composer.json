@@ -1,6 +1,6 @@
 {
 	"name": "zenotds/wp_composer",
-	"version": "6.0",
+	"version": "7.0",
 	"description": "Composer for WP Devkit",
 	"type": "wordpress-theme",
 	"license": "MIT",
@@ -18,9 +18,6 @@
 	],
 	"require": {
 		"timber/timber": "^2.3"
-	},
-	"require-dev": {
-		"yoast/wp-test-utils": "^1.0"
 	},
 	"config": {
 		"allow-plugins": {

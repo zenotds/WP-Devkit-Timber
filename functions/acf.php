@@ -1,22 +1,19 @@
 <?php
+// Helper e personalizzazioni ACF.
+// Snippet opzionali (filtri relationship/post_object per template, palette
+// TinyMCE, ecc.) sono nel ricettario: .claude/CLAUDE.md → "Ricette".
 
-//BOILERPLATES
-// Filto ACF campo relazioni isolato per template
-// function acf_rel_sample($args, $field, $post_id)
-// {
-// 	$args['meta_key'] = '_wp_page_template';
-// 	$args['meta_value'] = ['template-name.php'];
-// 	return $args;
-// }
-// add_filter('acf/fields/relationship/query/name=field_name', 'acf_rel_sample', 10, 3);
-
-// Filto ACF per oggetto post isolato per template
-// function acf_obj_sample($args, $field, $post_id) {
-// 	$args['meta_key'] = '_wp_page_template';
-// 	$args['meta_value'] = ['template.php', 'template-2.php'];
-// 	return $args;
-// }
-// add_filter('acf/fields/post_object/query/name=field_name', 'acf_obj_sample', 10, 3);
+// Nomi file ACF JSON parlanti: <prefisso-chiave>_<slug-del-titolo>.json (le chiavi
+// dentro restano hash). Senza questo filtro un salvataggio da admin ricreerebbe il
+// file col nome-chiave, duplicandolo. Priorità 5: il filtro di blocks.php (10) può
+// ancora forzare fields.json per i field group dei blocchi. Titoli univoci!
+add_filter('acf/json/save_file_name', function ($filename, $post) {
+	if (empty($post['title']) || empty($post['key'])) {
+		return $filename;
+	}
+	$prefix = preg_replace('/_[a-z0-9]+$/i', '', $post['key']);
+	return $prefix . '_' . sanitize_title($post['title']) . '.json';
+}, 5, 2);
 
 // Disattiva sync ripetitore ACFxWPML
 define('ACFML_REPEATER_SYNC_DEFAULT', false);
@@ -114,10 +111,10 @@ function add_uniqueid_to_acf($value, $post_id, $field)
 }
 add_filter('acf/load_value', 'add_uniqueid_to_acf', 10, 3);
 
-// Google API per campo Maps
+// Google API per campo Maps — definisci GMAPS_API_KEY in wp-config.php
 function my_acf_google_map_api($api)
 {
-	$api['key'] = '';
+	$api['key'] = GMAPS_API_KEY;
 	return $api;
 }
 add_filter('acf/fields/google_map/api', 'my_acf_google_map_api');
@@ -146,14 +143,7 @@ function add_acf_wysiwyg_custom_settings($field)
 					// Remove H1 from format dropdown
 					mceInit.block_formats = 'Paragraph=p;Heading 2=h2;Heading 3=h3;Heading 4=h4;Heading 5=h5;Heading 6=h6;Preformatted=pre';
 
-					// Add custom colors to text color palette
-					// mceInit.textcolor_map = [
-					// 	// Your 4 custom colors first
-					// 	'4b7393', 'Avio ZS',
-					// 	'0d5ea2', 'Azzurro ZS',
-					// 	'003764', 'Blu ZS',
-					// 	'71b3e7', 'Celeste ZS'
-					// ];
+					// Palette colori custom: vedi .claude/CLAUDE.md → "Ricette"
 
 					// Number of columns in color picker
 					mceInit.textcolor_cols = 5;
@@ -205,137 +195,3 @@ function acf_wysiwyg_larger_color_swatches()
 <?php
 }
 
-// Help swatches for colors
-// add_action('acf/input/admin_head', 'add_color_swatches_to_select');
-function add_color_swatches_to_select()
-{
-?>
-
-	<script type="text/javascript">
-		(function($) {
-
-			// Method 2: JavaScript approach - modify select options after page load
-			$(document).ready(function() {
-
-				// Define your colors (match the @theme palette in dev/css/styles.css)
-				var colorMap = {
-					'verde': '#609422',
-					'none': '#fff'
-				};
-
-				// Alternative: Create a custom visual select
-				$('[data-name="color"]').each(function() {
-					var $field = $(this);
-					var $select = $field.find('select');
-
-					if ($select.length && !$field.find('.color-select-visual').length) {
-
-						// Hide original select and create visual version
-						$select.hide();
-
-						var $visualSelect = $('<div class="color-select-visual"></div>');
-						var currentValue = $select.val();
-
-						// Create display button
-						var $display = $('<div class="color-select-display"></div>');
-						updateDisplay();
-
-						// Create dropdown
-						var $dropdown = $('<div class="color-select-dropdown" style="display:none;"></div>');
-
-						$select.find('option').each(function() {
-							var $option = $(this);
-							var value = $option.val();
-							var text = $option.text();
-
-							var $item = $('<div class="color-select-item" data-value="' + value + '"></div>');
-
-							if (colorMap[value]) {
-								$item.html('<span class="color-swatch" style="background:' + colorMap[value] + ';"></span>' + text);
-							} else {
-								$item.text(text);
-							}
-
-							$item.click(function() {
-								$select.val(value).trigger('change');
-								currentValue = value;
-								updateDisplay();
-								$dropdown.hide();
-							});
-
-							$dropdown.append($item);
-						});
-
-						function updateDisplay() {
-							var selectedText = $select.find('option:selected').text();
-							if (colorMap[currentValue]) {
-								$display.html('<span class="color-swatch" style="background:' + colorMap[currentValue] + ';"></span>' + selectedText);
-							} else {
-								$display.text(selectedText);
-							}
-						}
-
-						$display.click(function() {
-							$dropdown.toggle();
-						});
-
-						$visualSelect.append($display).append($dropdown);
-						$select.after($visualSelect);
-					}
-				});
-			});
-
-		})(jQuery);
-	</script>
-
-	<style>
-		/* Styles for the custom visual select */
-		.color-select-visual {
-			position: relative;
-		}
-
-		.color-select-display {
-			border: 1px solid #ddd;
-			padding: 8px 12px;
-			background: #fff url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%206l5%205%205-5%202%201-7%207-7-7%202-1z%22%20fill%3D%22%23555%22%2F%3E%3C%2Fsvg%3E') no-repeat right 5px top 55%;
-			cursor: pointer;
-			display: flex;
-			align-items: center;
-			gap: 8px;
-		}
-
-		.color-select-dropdown {
-			position: absolute;
-			top: 100%;
-			left: 0;
-			right: 0;
-			border: 1px solid #ddd;
-			background: white;
-			z-index: 1000;
-			max-height: 200px;
-			overflow-y: auto;
-		}
-
-		.color-select-item {
-			padding: 8px 12px;
-			cursor: pointer;
-			display: flex;
-			align-items: center;
-			gap: 8px;
-		}
-
-		.color-select-item:hover {
-			background: #f5f5f5;
-		}
-
-		.color-swatch {
-			display: inline-block;
-			width: 16px;
-			height: 16px;
-			border: 1px solid #ccc;
-			border-radius: 2px;
-			flex-shrink: 0;
-		}
-	</style>
-<?php
-}

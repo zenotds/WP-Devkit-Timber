@@ -30,10 +30,10 @@ A modern, opinionated WordPress theme development kit built on Timber, featuring
    ```
 
 2. **Configure Development URL**
-   
-   Edit `esbuild.js` at line 245 and set your local development domain:
+
+   Edit the build config block at the top of `esbuild.js` and set your local development domain (and browser, if needed):
    ```javascript
-   const PROXY_URL = 'https://your-site.test';
+   const PROXY_URL = "https://your-site.test";
    ```
 
 3. **Start Development**

@@ -1,0 +1,16 @@
+<article class="comment" id="comment-{{ comment.ID }}">
+	<div class="comment-meta">
+		<span class="comment-author font-bold">{{ comment.author.name }}</span>
+		<time datetime="{{ comment.date|date('c') }}">{{ comment.date }}</time>
+	</div>
+	<div class="comment-text typo-r">
+		{{ comment.content }}
+	</div>
+	{% if comment.children %}
+		<div class="comment-replies ms-8">
+			{% for child in comment.children %}
+				{% include "comment.twig" with { comment: child } %}
+			{% endfor %}
+		</div>
+	{% endif %}
+</article>

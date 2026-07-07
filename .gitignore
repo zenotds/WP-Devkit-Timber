@@ -56,7 +56,9 @@ Thumbs.db
 vendor
 composer.lock
 
-# AI
-.claude
+# AI — CLAUDE.md e PROJECT.md sono parte del devkit e vanno versionati
+.claude/*
+!.claude/CLAUDE.md
+!.claude/PROJECT.md
 .gemini
 .codex

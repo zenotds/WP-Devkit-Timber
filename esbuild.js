@@ -30,6 +30,27 @@ process.emitWarning = (warning, ...args) => {
 	return originalEmitWarning(warning, ...args);
 };
 
+// ============================================
+// CONFIGURAZIONE BUILD (per progetto)
+// ============================================
+
+// URL locale del sito da proxare con BrowserSync
+const PROXY_URL = "https://your-site.test";
+
+// Browser da aprire in sviluppo
+const BROWSER = ["firefox developer edition"];
+
+// Cartelle osservate in watch (le mancanti vengono ignorate)
+const WATCH_PATHS = [
+	"./templates/",
+	"./blocks/",
+	"./woocommerce/",
+	"./dev/css/",
+	"./dev/js/",
+];
+
+// ============================================
+
 // Determine if the environment is production
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -77,6 +98,19 @@ function updateVersion() {
 
 	fs.writeFileSync(styleFilePath, content, { encoding: "utf8" });
 	console.log(`📦 Version updated to ${newVersion} — Release Date: ${dateStr}`);
+}
+
+// Normalizza i percorsi webfont nei CSS compilati: da assets/css/ è sempre ../webfonts/
+function normalizeFontPaths(files) {
+	for (const file of files) {
+		if (!file.endsWith(".css") || !fs.existsSync(file)) continue;
+		const css = fs.readFileSync(file, "utf8");
+		const fixed = css.replace(
+			/url\((["']?)(?:\.{1,2}\/)*webfonts\//g,
+			"url($1../webfonts/",
+		);
+		if (fixed !== css) fs.writeFileSync(file, fixed);
+	}
 }
 
 // Function to log file sizes of generated assets
@@ -160,6 +194,11 @@ function createBuildOptions() {
 		logLevel: isProduction ? "silent" : "info",
 		plugins: [postcssPlugin],
 		target: ["esnext"],
+		define: {
+			"process.env.NODE_ENV": JSON.stringify(
+				isProduction ? "production" : "development",
+			),
+		},
 		external: [
 			"*.woff",
 			"*.woff2",
@@ -197,6 +236,8 @@ async function build() {
 				styles.push(`./assets/${entry}.css.map`); // Include source map
 			}
 		}
+
+		normalizeFontPaths(styles);
 
 		// Log file sizes for styles
 		if (styles.length > 0) {
@@ -244,13 +285,13 @@ if (!isProduction) {
 			console.log(`🔭 Watching for changes...\n`);
 
 			bs.init({
-				proxy: "https://your-site.test",
+				proxy: PROXY_URL,
 				open: true,
-				browser: ["firefox developer edition"],
+				browser: BROWSER,
 			});
 
 			chokidar
-				.watch(["./templates/", "./woocommerce/", "./dev/css/", "./dev/js/"], {
+				.watch(WATCH_PATHS, {
 					ignoreInitial: true,
 				})
 				.on("all", (event, filePath) => {

@@ -7,6 +7,6 @@
 $context = Timber::context();
 $context['post'] = Timber::get_post();
 
-$templates = array('page-product.twig');
+$templates = array('page-custom.twig');
 
 Timber::render($templates, $context);

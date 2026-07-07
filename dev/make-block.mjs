@@ -16,6 +16,18 @@ const blockTitle = title || slug.charAt(0).toUpperCase() + slug.slice(1);
 const source = path.resolve("blocks/section");
 const target = path.resolve(`blocks/${slug}`);
 
+// Namespace del tema: unica fonte è THEME_NAMESPACE in functions/config.php
+function themeNamespace() {
+	try {
+		const config = fs.readFileSync(path.resolve("functions/config.php"), "utf8");
+		const match = config.match(/define\(\s*'THEME_NAMESPACE'\s*,\s*'([^']+)'\s*\)/);
+		if (match) return match[1];
+	} catch {}
+	console.warn("⚠️ THEME_NAMESPACE non trovato in functions/config.php, uso 'bizen'.");
+	return "bizen";
+}
+const NAMESPACE = themeNamespace();
+
 if (!fs.existsSync(source)) {
 	console.error(`Demo block not found: ${source}`);
 	process.exit(1);
@@ -32,7 +44,7 @@ fs.mkdirSync(target, { recursive: true });
 const blockJson = JSON.parse(
 	fs.readFileSync(path.join(source, "block.json"), "utf8"),
 );
-blockJson.name = `bizen/${slug}`;
+blockJson.name = `${NAMESPACE}/${slug}`;
 blockJson.title = blockTitle;
 blockJson.description = "";
 blockJson.keywords = [slug];
