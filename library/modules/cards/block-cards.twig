@@ -1,0 +1,88 @@
+{# Modulo Cards — griglia di card (immagine + titolo + testo + link) con intro e CTA opzionali; opzioni surface (box), image_style (cover/contain), allineamento, sfondo data-bg + eventuale immagine di sfondo. Dipendenze: FA icons (fa-arrow-right) #}
+{% import '/partial/macros.twig' as macros %}
+{% set tag = content.tag|default('h2') %}
+{% set bg = content.bg|default('none') %}
+{% set bgImg = content.bg_image ? get_image(content.bg_image) : null %}
+{% set surface = content.surface %}
+{% set imageStyle = content.image_style|default('cover') %}
+{% set align = content.align|default('left') %}
+{% set btn = bg == 'dark' ? 'btn btn-white' : 'btn' %}
+{% set count = content.cards|length %}
+{% set cols = count == 2 ? 'sm:grid-cols-2' : count == 4 ? 'sm:grid-cols-2 xl:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3' %}
+
+<section class="block-cards{% if bgImg %} has-bg-image{% endif %}" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}"{% if bg != 'none' or bgImg %} data-bg="{{ bg }}"{% endif %}>
+    {% if bgImg %}
+        {{ macros.image(bgImg, {
+            sizes: { 'xs': [768, 560], 'md': [1280, 720], 'xl': [1920, 900], '2xl': [2560, 1120] },
+            pictureClass: 'bg-media absolute inset-0 -z-1'
+        }) }}
+    {% endif %}
+    <div class="container mx-auto">
+
+        {% if content.title or content.subtitle %}
+            <div class="intro mx-auto mb-8 max-w-3xl text-center xl:mb-12">
+                {% if content.title %}
+                    <{{ tag }} class="title typo-h text-{{ tag }}">{{ content.title }}</{{ tag }}>
+                {% endif %}
+                {% if content.subtitle %}
+                    <p class="subtitle text-lead mt-3">{{ content.subtitle }}</p>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {% if content.cards %}
+            <div class="grid grid-cols-1 gap-6 lg:gap-8 {{ cols }}">
+                {% for card in content.cards %}
+                    {{ _self.card(card, surface, imageStyle, align) }}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if content.extra_text or content.cta_button %}
+            <div class="extra mx-auto mt-10 flex max-w-3xl flex-col items-center gap-4 text-center xl:mt-12">
+                {% if content.extra_text %}
+                    <div class="typo-r text-lead">{{ content.extra_text }}</div>
+                {% endif %}
+                {% if content.cta_button %}
+                    <a class="{{ btn }}" href="{{ content.cta_button.url }}" target="{{ content.cta_button.target }}">{{ content.cta_button.title }}</a>
+                {% endif %}
+            </div>
+        {% endif %}
+
+    </div>
+</section>
+
+{# Card factory: i macros top-level non sono visibili dentro una macro locale, reimportati qui #}
+{% macro card(card, surface, imageStyle, align) %}
+    {% import '/partial/macros.twig' as macros %}
+    <div class="card flex h-full w-full flex-col gap-3 {{ align == 'center' ? 'items-center text-center' }} {{ surface ? 'surface rounded-xl bg-light p-6 lg:p-8' }}">
+        {% if card.image %}
+            <div class="media has-[+*]:mb-1">
+                {% if imageStyle == 'contain' %}
+                    {{ macros.image(get_image(card.image), {
+                        sizes: { 'xs': [320, 240] },
+                        pictureClass: 'block',
+                        imgClass: 'mx-auto h-24 w-auto object-contain'
+                    }) }}
+                {% else %}
+                    {{ macros.image(get_image(card.image), {
+                        sizes: { 'xs': [640, 480], 'sm': [480, 360], 'lg': [440, 330] },
+                        pictureClass: 'block',
+                        imgClass: 'aspect-4/3 w-full object-cover'
+                    }) }}
+                {% endif %}
+            </div>
+        {% endif %}
+        {% if card.title %}
+            <div class="title typo-h text-h4">{{ card.title }}</div>
+        {% endif %}
+        {% if card.text %}
+            <div class="text typo-r">{{ card.text }}</div>
+        {% endif %}
+        {% if card.link %}
+            <a class="card-link group mt-auto inline-flex items-center gap-2 pt-1 text-xs font-extrabold tracking-[0.2em] text-current uppercase" href="{{ card.link.url }}" target="{{ card.link.target }}">
+                {{ card.link.title }} <i class="fa fa-arrow-right cta-arrow transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true"></i>
+            </a>
+        {% endif %}
+    </div>
+{% endmacro %}

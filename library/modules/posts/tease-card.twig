@@ -1,0 +1,28 @@
+{# Card generica per i caroselli (modulo Posts): immagine + pannello con categoria|data e titolo. Classe .surface: dentro le sezioni data-bg="dark" il testo resta scuro (dev/css/layout/section-bg.css) #}
+{% import '/partial/macros.twig' as macros %}
+{% set cat = post.terms('category')|first %}
+
+<article class="card surface flex flex-col overflow-clip rounded-b-xl bg-light">
+    <a href="{{ post.link }}" class="group media-hover relative block aspect-4/3 overflow-clip bg-light">
+        {% if post.thumbnail %}
+            {{ macros.image(post.thumbnail, {
+                sizes: { 'xs': [720, 540], 'sm': [420, 315], 'lg': [400, 300] },
+                pictureClass: 'block h-full',
+                imgClass: 'h-full w-full object-cover'
+            }) }}
+        {% endif %}
+    </a>
+
+    <div class="flex flex-1 flex-col gap-2 p-6 lg:p-8">
+        <div class="meta flex items-center gap-2 text-sm">
+            {% if cat %}
+                <a href="{{ cat.link }}" class="text-accent underline transition-colors hover:text-dark">{{ cat.title }}</a>
+                <span class="opacity-40">|</span>
+            {% endif %}
+            <time datetime="{{ post.date('Y-m-d') }}">{{ post.date('j F Y') }}</time>
+        </div>
+        <h3 class="title typo-h text-h5 uppercase">
+            <a href="{{ post.link }}" class="transition-colors hover:text-accent">{{ post.title }}</a>
+        </h3>
+    </div>
+</article>

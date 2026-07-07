@@ -1,0 +1,42 @@
+{# Modulo CTA — banda accent arrotondata con titolo, testo e bottone centrati; immagine di sfondo opzionale fusa in grayscale+multiply col colore accent. Dipendenze: macros.image #}
+{% import '/partial/macros.twig' as macros %}
+{% set tag = content.tag|default('h2') %}
+
+<section class="block-cta" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}">
+    <div class="container mx-auto">
+
+        {# Banda: superficie accent autonoma, il testo resta bianco a prescindere dal contesto #}
+        <div class="band relative isolate overflow-clip rounded-2xl bg-accent shadow-custom">
+
+            {# Immagine di sfondo: dietro al contenuto, si fonde col colore della banda #}
+            {% if content.image %}
+                {{ macros.image(get_image(content.image), {
+                    sizes: { 'xs': [768], 'lg': [1280], '2xl': [1536] },
+                    pictureClass: 'absolute inset-0 -z-1 mix-blend-multiply grayscale',
+                    imgClass: 'h-full w-full object-cover'
+                }) }}
+            {% endif %}
+
+            {# Contenuto #}
+            <div class="content mx-auto max-w-4xl px-6 py-16 text-center text-white lg:py-20">
+
+                {% if content.title %}
+                    <{{ tag }} class="title typo-h text-{{ tag }} text-white has-[+*]:mb-4">{{ content.title }}</{{ tag }}>
+                {% endif %}
+
+                {% if content.text %}
+                    <div class="text typo-r">{{ content.text }}</div>
+                {% endif %}
+
+                {% if content.button %}
+                    <div class="buttons mt-8">
+                        <a class="btn" href="{{ content.button.url }}" target="{{ content.button.target }}">{{ content.button.title }}</a>
+                    </div>
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+</section>

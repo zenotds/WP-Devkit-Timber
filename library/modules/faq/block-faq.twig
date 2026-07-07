@@ -1,0 +1,51 @@
+{# Modulo FAQ — domande frequenti in card chiare allineate per riga (subgrid) + JSON-LD FAQPage per i rich result. Dipendenze: CSS components/faq.css #}
+{% set tag = content.tag|default('h2') %}
+{% set bg = content.bg|default('none') %}
+
+<section class="block-faq" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}"{% if bg != 'none' %} data-bg="{{ bg }}"{% endif %}>
+    <div class="container mx-auto">
+
+        {% if content.title or content.subtitle %}
+            <div class="intro mx-auto mb-10 max-w-3xl text-center xl:mb-14">
+                {% if content.title %}
+                    <{{ tag }} class="title typo-h text-{{ tag }}">{{ content.title }}</{{ tag }}>
+                {% endif %}
+                {% if content.subtitle %}
+                    <p class="subtitle text-lead mt-3">{{ content.subtitle }}</p>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {% if content.faqs %}
+
+            {# Schema.org FAQPage (JSON-LD) per i rich result #}
+            {% set faq_entities = [] %}
+            {% for item in content.faqs %}
+                {% if item.question and item.answer %}
+                    {% set faq_entities = faq_entities|merge([{
+                        '@type': 'Question',
+                        'name': item.question,
+                        'acceptedAnswer': { '@type': 'Answer', 'text': item.answer }
+                    }]) %}
+                {% endif %}
+            {% endfor %}
+            {% if faq_entities %}
+                <script type="application/ld+json">{{ { '@context': 'https://schema.org', '@type': 'FAQPage', 'mainEntity': faq_entities }|json_encode|raw }}</script>
+            {% endif %}
+
+            <div class="faq-grid">
+                {% for item in content.faqs %}
+                    <div class="faq-card surface rounded-xl bg-light p-8">
+                        {% if item.question %}
+                            <h3 class="question typo-h text-h5"><span class="text-accent">?</span> {{ item.question }}</h3>
+                        {% endif %}
+                        {% if item.answer %}
+                            <div class="answer typo-r">{{ item.answer }}</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+    </div>
+</section>

@@ -1,0 +1,33 @@
+{# Modulo Form — intro centrata + form CF7 (post object) reso via shortcode; data-typ per il redirect alla thank-you page (gestito da initFormRedirects in scripts.js). Dipendenze: Contact Form 7, stili globali partial/forms.css #}
+{% set tag = content.tag|default('h2') %}
+{% set bg = content.bg|default('none') %}
+
+<section class="block-form" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}"{% if bg != 'none' %} data-bg="{{ bg }}"{% endif %}>
+    <div class="container mx-auto max-w-7xl">
+
+        {# Intro #}
+        {% if content.title or content.subtitle or content.text %}
+            <div class="intro mx-auto mb-10 max-w-3xl text-center lg:mb-14">
+                {% if content.title %}
+                    <{{ tag }} class="title typo-h text-{{ tag }} has-[+*]:mb-4">{{ content.title }}</{{ tag }}>
+                {% endif %}
+                {% if content.subtitle %}
+                    <p class="subtitle text-lead has-[+*]:mb-4">{{ content.subtitle }}</p>
+                {% endif %}
+                {% if content.text %}
+                    <div class="text typo-r">{{ content.text }}</div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {# Form CF7 #}
+        {% if content.form %}
+            <div class="form mx-auto max-w-5xl"{% if content.typ %} data-typ="{{ content.typ }}"{% endif %}>
+                {% apply shortcodes %}
+                    [contact-form-7 id="{{ content.form.ID }}" html_id="{{ content.form.post_title|slug }}"]
+                {% endapply %}
+            </div>
+        {% endif %}
+
+    </div>
+</section>

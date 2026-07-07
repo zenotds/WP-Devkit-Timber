@@ -1,0 +1,31 @@
+{# Modulo Contacts — mappa (embed iframe da campo textarea) + titolo/testo affiancati, lato mappa selezionabile via align; sfondo data-bg. Dipendenze: nessuna #}
+{% set tag = content.tag|default('h2') %}
+{% set bg = content.bg|default('none') %}
+
+<section class="block-contacts" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}"{% if bg != 'none' %} data-bg="{{ bg }}"{% endif %}>
+    <div class="container mx-auto">
+        <div class="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-16 lg:items-center">
+
+            {# Mappa: embed HTML libero (iframe Google Maps o simili) #}
+            {% if content.map %}
+                <div class="map aspect-4/3 overflow-clip rounded-2xl shadow-custom [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0 {{ content.align == 'end' ? 'md:order-last' }}">
+                    {{ content.map }}
+                </div>
+            {% endif %}
+
+            {# Contenuto: nessun dato hardcoded, tutto dai campi del modulo #}
+            <div class="content">
+
+                {% if content.title %}
+                    <{{ tag }} class="title typo-h text-h3 has-[+*]:mb-4">{{ content.title }}</{{ tag }}>
+                {% endif %}
+
+                {% if content.text %}
+                    <div class="text typo-r">{{ content.text }}</div>
+                {% endif %}
+
+            </div>
+
+        </div>
+    </div>
+</section>

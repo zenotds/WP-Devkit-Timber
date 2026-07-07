@@ -1,0 +1,78 @@
+{# Modulo Icons — griglia o carosello di card icona (FontAwesome) con titolo/testo/bottone, intro e strip CTA opzionali. Dipendenze: FA icons, Swiper (vista carousel), CSS components/icons.css (badge icona) #}
+{% set tag = content.tag|default('h2') %}
+{% set bg = content.bg|default('none') %}
+{% set view = content.view|default('grid') %}
+{% set iconStyle = content.icon_style|default('accent') %}
+{% set boxed = content.boxed %}
+{% set count = content.cards|length %}
+{% set cols = count == 2 ? 'sm:grid-cols-2' : count == 4 ? 'sm:grid-cols-2 xl:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3' %}
+
+<section class="block-icons" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}"{% if bg != 'none' %} data-bg="{{ bg }}"{% endif %}>
+    <div class="container mx-auto">
+
+        {% if content.title or content.subtitle or content.text %}
+            <div class="intro mx-auto mb-8 max-w-3xl text-center xl:mb-12">
+                {% if content.title %}
+                    <{{ tag }} class="title typo-h text-{{ tag }}">{{ content.title }}</{{ tag }}>
+                {% endif %}
+                {% if content.subtitle %}
+                    <p class="subtitle text-lead mt-3">{{ content.subtitle }}</p>
+                {% endif %}
+                {% if content.text %}
+                    <div class="text typo-r mt-4">{{ content.text }}</div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {% if content.cards %}
+            {% if view == 'carousel' %}
+                <div class="media-slider swiper" data-per-view="{{ count >= 4 ? 4 : 3 }}">
+                    <div class="swiper-wrapper">
+                        {% for card in content.cards %}
+                            <div class="swiper-slide flex">{{ _self.card(card, iconStyle, boxed) }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="swiper-pagination"></div>
+                </div>
+            {% else %}
+                <div class="grid grid-cols-1 gap-8 lg:gap-x-12 {{ cols }}">
+                    {% for card in content.cards %}
+                        {{ _self.card(card, iconStyle, boxed) }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endif %}
+
+        {% if content.cta_text or content.cta_link %}
+            <div class="cta mx-auto mt-10 flex max-w-3xl flex-col items-center justify-between gap-3 border border-current px-6 py-4 text-center sm:flex-row sm:text-left xl:mt-12">
+                {% if content.cta_text %}
+                    <span class="opacity-80">{{ content.cta_text }}</span>
+                {% endif %}
+                {% if content.cta_link %}
+                    <a class="cta-link group inline-flex shrink-0 items-center gap-2 text-xs font-extrabold tracking-[0.2em] text-current uppercase" href="{{ content.cta_link.url }}" target="{{ content.cta_link.target }}">
+                        {{ content.cta_link.title }} <i class="fa fa-arrow-right cta-arrow transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true"></i>
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+
+    </div>
+</section>
+
+{# Card factory: nessun macro top-level usato qui, ma in caso di aggiunte va reimportato dentro la macro #}
+{% macro card(card, iconStyle, boxed) %}
+    <div class="card flex h-full w-full flex-col items-center gap-3 text-center {{ boxed ? 'surface rounded-xl bg-light p-8' }}">
+        {% if card.icon %}
+            <span class="icon-badge icon-badge--{{ iconStyle }}"><i class="fa {{ card.icon }}" aria-hidden="true"></i></span>
+        {% endif %}
+        {% if card.title %}
+            <div class="title typo-h text-h5">{{ card.title }}</div>
+        {% endif %}
+        {% if card.text %}
+            <div class="text typo-r">{{ card.text }}</div>
+        {% endif %}
+        {% if card.button %}
+            <a class="btn mt-auto" href="{{ card.button.url }}" target="{{ card.button.target }}">{{ card.button.title }}</a>
+        {% endif %}
+    </div>
+{% endmacro %}

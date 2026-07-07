@@ -1,0 +1,28 @@
+/* Badge icona speech-bubble del modulo block-icons: codina al centro-basso, 3 varianti colore */
+.icon-badge {
+	@apply relative inline-flex h-16 w-16 items-center justify-center rounded-2xl text-3xl;
+
+	&::after {
+		content: "";
+		@apply absolute -bottom-1 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 rounded-xs;
+	}
+
+	&.icon-badge--accent {
+		@apply bg-accent text-white;
+		&::after { @apply bg-accent; }
+	}
+
+	&.icon-badge--white {
+		@apply bg-white text-accent;
+		&::after { @apply bg-white; }
+	}
+
+	&.icon-badge--light {
+		@apply bg-light text-accent;
+		&::after { @apply bg-light; }
+	}
+}
+
+.block-icons .cta-arrow {
+	color: var(--color-accent);
+}

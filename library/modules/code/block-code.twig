@@ -1,0 +1,35 @@
+{# Layout "code" del flexible content: intro opzionale + HTML/embed grezzo (iframe, script, markup custom), con opzione full width. Nessuna dipendenza #}
+{% set tag = content.tag|default('h2') %}
+{% set bg = content.bg|default('none') %}
+
+{% if content.code %}
+    <section class="block-code" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}"{% if bg != 'none' %} data-bg="{{ bg }}"{% endif %}>
+
+        {% if content.title or content.subtitle or content.text %}
+            <div class="container mx-auto">
+                <div class="intro grid gap-4 lg:gap-6 mb-8 lg:mb-10">
+                    {% if content.title %}
+                        <{{ tag }} class="title typo-h text-{{ tag }}">{{ content.title }}</{{ tag }}>
+                    {% endif %}
+                    {% if content.subtitle %}
+                        <p class="subtitle text-lead">{{ content.subtitle }}</p>
+                    {% endif %}
+                    {% if content.text %}
+                        <div class="text typo-r">{{ content.text }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if content.full_width %}
+            {{ content.code|raw }}
+        {% else %}
+            <div class="container mx-auto">
+                <div class="wrapper">
+                    {{ content.code|raw }}
+                </div>
+            </div>
+        {% endif %}
+
+    </section>
+{% endif %}

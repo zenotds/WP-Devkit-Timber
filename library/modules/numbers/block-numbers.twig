@@ -1,0 +1,50 @@
+{# Modulo Numbers — intro centrata + griglia di contatori animati [data-countup] (init in scripts.js: il valore è testo libero tipo "+300", conta solo la parte numerica) + bottone opzionale; sfondo data-bg. Dipendenze: countup.js #}
+{% set tag = content.tag|default('h2') %}
+{% set bg = content.bg|default('none') %}
+
+<section class="block-numbers" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}"{% if bg != 'none' %} data-bg="{{ bg }}"{% endif %}>
+    <div class="container mx-auto">
+
+        {# Intro #}
+        {% if content.title or content.text %}
+            <div class="intro mx-auto mb-12 max-w-4xl text-center">
+                {% if content.title %}
+                    <{{ tag }} class="title typo-h text-{{ tag }} has-[+*]:mb-4">{{ content.title }}</{{ tag }}>
+                {% endif %}
+                {% if content.text %}
+                    <div class="text typo-r">{{ content.text }}</div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {# Contatori: griglia adattiva in base al numero di voci #}
+        {% set count = content.numbers|length %}
+        <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 {{ count == 3 ? 'md:grid-cols-3' : count == 4 ? 'md:grid-cols-2 xl:grid-cols-4' : count > 4 ? 'md:grid-cols-3' : '' }}">
+            {% for item in content.numbers %}
+                <div class="number text-center">
+
+                    {% if item.number %}
+                        <div class="value typo-h text-h1 leading-none text-accent has-[+*]:mb-2" data-countup="{{ item.number }}">{{ item.number }}</div>
+                    {% endif %}
+
+                    {% if item.title %}
+                        <div class="title typo-h text-h5 has-[+*]:mb-2">{{ item.title }}</div>
+                    {% endif %}
+
+                    {% if item.text %}
+                        <div class="text typo-r">{{ item.text }}</div>
+                    {% endif %}
+
+                </div>
+            {% endfor %}
+        </div>
+
+        {# Bottone #}
+        {% if content.button %}
+            <div class="buttons pt-12 text-center">
+                <a class="btn" href="{{ content.button.url }}" target="{{ content.button.target }}">{{ content.button.title }}</a>
+            </div>
+        {% endif %}
+
+    </div>
+</section>

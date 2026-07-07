@@ -1,0 +1,56 @@
+{# Modulo Panel — split fullscreen: contenuto sulla gutter + immagine a filo bordo; banda full-bleed esclusa dal ritmo verticale (vedi layout/common.css), sfondi via data-bg #}
+{% import '/partial/macros.twig' as macros %}
+{% set tag = content.tag|default('h2') %}
+{% set bg = content.bg|default('none') %}
+{% set cover = content.image ? get_image(content.image) : null %}
+
+<section class="block-panel" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}"{% if bg != 'none' %} data-bg="{{ bg }}"{% endif %}>
+
+    {# Grid full-width: contenuto sulla gutter del menu, immagine a filo bordo (2/3 da xl); senza immagine il contenuto occupa tutta la larghezza come banda. Lo sfondo è sulla <section> (non sulla colonna) così riempie tutta la banda e si salda al modulo bg adiacente #}
+    <div class="grid lg:grid-cols-2 lg:min-h-112 xl:grid-cols-3 xl:min-h-144">
+
+        <div class="content flex flex-col justify-center px-4 py-8 lg:px-6 lg:py-12 {{ cover ? (content.align == 'start' ? 'lg:ps-12 xl:ps-16' : 'lg:pe-12 xl:pe-16') }} {{ not cover ? 'lg:col-span-2 xl:col-span-3' }}">
+            <div class="flex flex-col gap-3 {{ not cover ? 'mx-auto w-full max-w-3xl' }}">
+
+                {% if content.eyebrow %}
+                    <p class="eyebrow text-sm font-semibold tracking-wide text-accent uppercase">{{ content.eyebrow }}</p>
+                {% endif %}
+
+                {% if content.title %}
+                    <{{ tag }} class="title typo-h text-{{ tag }}">{{ content.title }}</{{ tag }}>
+                {% endif %}
+
+                {% if content.subtitle %}
+                    <p class="subtitle text-lg leading-tight font-semibold">{{ content.subtitle }}</p>
+                {% endif %}
+
+                {% if content.text %}
+                    <div class="text typo-r">{{ content.text }}</div>
+                {% endif %}
+
+                {% if content.button %}
+                    <div class="button mt-2">
+                        <a class="btn {{ bg == 'dark' ? 'btn-white' }}" href="{{ content.button.url }}" target="{{ content.button.target }}">{{ content.button.title }}</a>
+                    </div>
+                {% endif %}
+
+                {% if content.note %}
+                    <p class="note text-sm opacity-80">{{ content.note }}</p>
+                {% endif %}
+
+            </div>
+        </div>
+
+        {% if cover %}
+            <div class="media relative aspect-4/3 overflow-clip lg:aspect-auto xl:col-span-2 {{ content.align == 'start' ? 'lg:order-first' }}">
+                {{ macros.image(cover, {
+                    sizes: { 'xs': [640, 480], 'sm': [820, 615], 'md': [1080, 810], 'lg': [760, 760], 'xl': [1040, 780], '2xl': [1280, 960] },
+                    pictureClass: 'absolute inset-0 h-full w-full',
+                    imgClass: 'h-full w-full object-cover'
+                }) }}
+            </div>
+        {% endif %}
+
+    </div>
+
+</section>

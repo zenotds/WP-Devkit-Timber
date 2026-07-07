@@ -1,0 +1,105 @@
+{# Modulo Media — media full-width (immagine / gallery / video / embed) con intestazione opzionale; gallery su .media-slider con data-per-view (init in scripts.js), lightbox VenoBox (.venobox), icone nav FontAwesome #}
+{% import '/partial/macros.twig' as macros %}
+{% set tag = content.tag|default('h2') %}
+{% set bg = content.bg|default('none') %}
+{% set secid = content.section_id|default('section-' ~ loop.index) %}
+
+<section class="block-media" id="{{ secid }}" data-loop="{{ loop.index }}"{% if bg != 'none' %} data-bg="{{ bg }}"{% endif %}>
+    <div class="container mx-auto">
+
+        {% if content.title or content.subtitle %}
+            <div class="intro mb-8 xl:mb-12 {{ content.align == 'center' ? 'text-center mx-auto max-w-3xl' }}">
+                {% if content.title %}
+                    <{{ tag }} class="title typo-h text-{{ tag }}">{{ content.title }}</{{ tag }}>
+                {% endif %}
+                {% if content.subtitle %}
+                    <p class="subtitle text-lead mt-4">{{ content.subtitle }}</p>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {% for media in content.media %}
+            <div class="media has-[+*]:mb-8">
+
+                {% if media.acf_fc_layout == 'immagine' and media.image %}
+                    {% set img = get_image(media.image) %}
+                    <a class="venobox block overflow-clip" href="{{ img.src }}" data-gall="{{ secid }}" data-cursor="zoom">
+                        {{ macros.image(img, { sizes: { 'xs': [800, 500], 'lg': [1200, 700], '2xl': [1440, 800] }, pictureClass: 'w-full', imgClass: 'w-full h-auto' }) }}
+                    </a>
+
+                {% elseif media.acf_fc_layout == 'gallery' and media.images %}
+                    {% set view = media.view|default('carousel') %}
+                    {% set aspect = media.aspect|default('4-3') %}
+                    {% set aspectClass = { '4-3': 'aspect-4/3', '16-9': 'aspect-video', 'none': '' }[aspect] %}
+                    {% set imgCfg = aspect == 'none' ? { pictureClass: 'w-full', imgClass: 'w-full h-auto' } : { pictureClass: 'w-full h-full', imgClass: 'w-full h-full object-cover' } %}
+                    {% set gall = secid ~ '-' ~ loop.index %}
+
+                    {% if view == 'carousel' %}
+                        <div class="media-slider swiper" data-per-view="3">
+                            <div class="swiper-wrapper">
+                                {% for id in media.images %}
+                                    <div class="swiper-slide">
+                                        <a class="venobox block {{ aspectClass }} overflow-clip" href="{{ get_image(id).src }}" data-gall="{{ gall }}" data-cursor="zoom">
+                                            {{ macros.image(get_image(id), { sizes: { 'xs': [700, 520], 'md': [500, 375], 'lg': [460, 345] }}|merge(imgCfg)) }}
+                                        </a>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="swiper-pagination"></div>
+                        </div>
+
+                    {% elseif view == 'contained' %}
+                        <div class="media-slider swiper mx-auto max-w-5xl">
+                            <div class="swiper-wrapper">
+                                {% for id in media.images %}
+                                    <div class="swiper-slide">
+                                        <div class="{{ aspectClass }} overflow-clip">
+                                            {{ macros.image(get_image(id), { sizes: { 'xs': [800, 600], 'md': [720, 540], 'lg': [976, 732] }}|merge(imgCfg)) }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="media-nav mt-4 flex items-center justify-center gap-3">
+                                <button type="button" class="media-prev flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-base transition-colors hover:bg-light" aria-label="Immagine precedente"><i class="fa fa-arrow-left" aria-hidden="true"></i></button>
+                                <div class="swiper-pagination"></div>
+                                <button type="button" class="media-next flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-base transition-colors hover:bg-light" aria-label="Immagine successiva"><i class="fa fa-arrow-right" aria-hidden="true"></i></button>
+                            </div>
+                        </div>
+
+                    {% else %}
+                        <div class="media-slider swiper full-bleed relative">
+                            <div class="swiper-wrapper">
+                                {% for id in media.images %}
+                                    <div class="swiper-slide flex justify-center bg-light">
+                                        <div class="{{ aspectClass }} max-h-screen overflow-clip mx-auto">
+                                            {{ macros.image(get_image(id), { sizes: { 'xs': [768], 'md': [1280], 'lg': [1600], '2xl': [1920] }}|merge(imgCfg)) }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="media-nav absolute inset-x-0 bottom-6 z-2 flex justify-center">
+                                <div class="flex items-center gap-3 rounded-full border-2 border-white bg-black/25 p-2 text-white">
+                                    <button type="button" class="media-prev flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-base transition-colors hover:bg-white hover:text-dark" aria-label="Immagine precedente"><i class="fa fa-arrow-left" aria-hidden="true"></i></button>
+                                    <div class="swiper-pagination light"></div>
+                                    <button type="button" class="media-next flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-base transition-colors hover:bg-white hover:text-dark" aria-label="Immagine successiva"><i class="fa fa-arrow-right" aria-hidden="true"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                {% elseif media.acf_fc_layout == 'video' and media.file %}
+                    <div class="video mx-auto max-w-5xl overflow-clip">
+                        {{ macros.mp4(media.file.url, { poster: media.poster ? get_image(media.poster).src : null, title: media.file.title, class: 'h-full w-full bg-black' }) }}
+                    </div>
+
+                {% elseif media.acf_fc_layout == 'embed' and media.video %}
+                    <div class="video mx-auto max-w-5xl overflow-clip">
+                        {{ macros.embed(media.video|video_provider, media.video|video_id, { poster: media.poster ? get_image(media.poster).src : null, class: 'h-full *:h-full *:bg-black' }) }}
+                    </div>
+                {% endif %}
+
+            </div>
+        {% endfor %}
+
+    </div>
+</section>

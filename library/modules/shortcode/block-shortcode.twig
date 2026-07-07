@@ -1,0 +1,29 @@
+{# Layout "shortcode" del flexible content: intro opzionale + shortcode WP (form CF7, plugin). Usa il filtro |shortcodes di Timber #}
+{% set tag = content.tag|default('h2') %}
+{% set bg = content.bg|default('none') %}
+
+{% if content.shortcode %}
+    <section class="block-shortcode" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}"{% if bg != 'none' %} data-bg="{{ bg }}"{% endif %}>
+        <div class="container mx-auto">
+
+            {% if content.title or content.subtitle or content.text %}
+                <div class="intro grid gap-4 lg:gap-6 mb-8 lg:mb-10">
+                    {% if content.title %}
+                        <{{ tag }} class="title typo-h text-{{ tag }}">{{ content.title }}</{{ tag }}>
+                    {% endif %}
+                    {% if content.subtitle %}
+                        <p class="subtitle text-lead">{{ content.subtitle }}</p>
+                    {% endif %}
+                    {% if content.text %}
+                        <div class="text typo-r">{{ content.text }}</div>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <div class="wrapper">
+                {{ content.shortcode|shortcodes }}
+            </div>
+
+        </div>
+    </section>
+{% endif %}

@@ -1,0 +1,6 @@
+{# Layout "separator" del flexible content: una linea da 1px tra un blocco e l'altro, padding come gli altri moduli (ritmo di .main > * in common.css). Nessuna dipendenza #}
+<section class="block-separator"{% if content.section_id %} id="{{ content.section_id }}"{% endif %}>
+    <div class="container mx-auto">
+        <hr class="separator-line border-0 border-t border-accent"/>
+    </div>
+</section>

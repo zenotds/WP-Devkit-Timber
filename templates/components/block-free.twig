@@ -1,11 +1,31 @@
-{# Layout "free" del flexible content: contenuto WYSIWYG libero #}
-{% import "partial/macros.twig" as macros %}
+{# Modulo Free — titolo + sottotitolo + testo libero (opzionale su due colonne) + bottone; nessuna dipendenza JS, sfondi via data-bg (layout/section-bg.css) #}
+{% set tag = content.tag|default('h2') %}
+{% set bg = content.bg|default('none') %}
 
-<section class="block-free{{ content.bg and content.bg != 'none' ? ' bg-' ~ content.bg }}" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}">
-    <div class="container">
-        {{ macros.intro(content) }}
-        {% if content.text %}
-            <div class="text prose">{{ content.text }}</div>
-        {% endif %}
+<section class="block-free" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}"{% if bg != 'none' %} data-bg="{{ bg }}"{% endif %}>
+    <div class="container mx-auto">
+        <div class="wrapper grid gap-4 lg:gap-6 {{ content.align == 'center' ? 'justify-items-center text-center' }}">
+
+            {% if content.title %}
+                <{{ tag }} class="title typo-h text-{{ tag }}">{{ content.title }}</{{ tag }}>
+            {% endif %}
+
+            {% if content.subtitle %}
+                <p class="subtitle text-lead">{{ content.subtitle }}</p>
+            {% endif %}
+
+            {% if content.text %}
+                <div class="text typo-r {{ content.columns ? 'gap-8 md:columns-2' }}">
+                    {{ content.text }}
+                </div>
+            {% endif %}
+
+            {% if content.button %}
+                <div class="button">
+                    <a class="btn" href="{{ content.button.url }}" target="{{ content.button.target }}">{{ content.button.title }}</a>
+                </div>
+            {% endif %}
+
+        </div>
     </div>
 </section>

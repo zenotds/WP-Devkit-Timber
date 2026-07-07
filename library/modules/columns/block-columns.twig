@@ -1,0 +1,73 @@
+{# Modulo Columns — testo + media affiancati (lato selezionabile via align); gallery su .media-slider (init in scripts.js, data-per-view default 1), lightbox VenoBox (.venobox) #}
+{% import '/partial/macros.twig' as macros %}
+{% set tag = content.tag|default('h2') %}
+{% set bg = content.bg|default('none') %}
+{% set media = content.media[0] %}
+{% set secid = content.section_id|default('section-' ~ loop.index) %}
+
+<section class="block-columns" id="{{ secid }}" data-loop="{{ loop.index }}"{% if bg != 'none' %} data-bg="{{ bg }}"{% endif %}>
+    <div class="container mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:items-center gap-8 md:gap-16">
+
+            {# Media: immagine singola / gallery slider / video mp4 / embed #}
+            {% if media %}
+                <div class="media {{ content.align == 'end' ? 'md:order-last' }}">
+
+                    {% if media.acf_fc_layout == 'immagine' and media.image %}
+                        {% set img = get_image(media.image) %}
+                        <a class="venobox block overflow-clip" href="{{ img.src }}" data-gall="{{ secid }}" data-cursor="zoom">
+                            {{ macros.image(img, { sizes: { 'xs': [600], 'md': [480], 'lg': [600] }, pictureClass: 'w-full', imgClass: 'w-full h-auto' }) }}
+                        </a>
+
+                    {% elseif media.acf_fc_layout == 'gallery' and media.images %}
+                        <div class="media-slider swiper">
+                            <div class="swiper-wrapper">
+                                {% for id in media.images %}
+                                    <div class="swiper-slide">
+                                        <a class="venobox block aspect-4/3 overflow-clip" href="{{ get_image(id).src }}" data-gall="{{ secid }}-gallery" data-cursor="zoom">
+                                            {{ macros.image(get_image(id), { sizes: { 'xs': [600], 'md': [480], 'lg': [600] }, pictureClass: 'w-full h-full', imgClass: 'w-full h-full object-cover' }) }}
+                                        </a>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="swiper-pagination"></div>
+                        </div>
+
+                    {% elseif media.acf_fc_layout == 'video' and media.file %}
+                        <div class="video overflow-clip">
+                            {{ macros.mp4(media.file.url, { poster: media.poster ? get_image(media.poster).src : null, class: 'h-full w-full bg-black' }) }}
+                        </div>
+
+                    {% elseif media.acf_fc_layout == 'embed' and media.video %}
+                        <div class="video overflow-clip">
+                            {{ macros.embed(media.video|video_provider, media.video|video_id, { poster: media.poster ? get_image(media.poster).src : null, class: 'h-full *:h-full *:bg-black' }) }}
+                        </div>
+                    {% endif %}
+
+                </div>
+            {% endif %}
+
+            {# Testo #}
+            <div class="content {{ content.align == 'end' ? 'lg:order-first' }}">
+
+                {% if content.title %}
+                    <{{ tag }} class="title typo-h text-{{ tag }} mb-4">{{ content.title }}</{{ tag }}>
+                {% endif %}
+
+                {% if content.subtitle %}
+                    <p class="subtitle text-lead mb-4">{{ content.subtitle }}</p>
+                {% endif %}
+
+                {% if content.text %}
+                    <div class="text typo-r mb-6">{{ content.text }}</div>
+                {% endif %}
+
+                {% if content.button %}
+                    <a class="btn" href="{{ content.button.url }}" target="{{ content.button.target }}">{{ content.button.title }}</a>
+                {% endif %}
+
+            </div>
+
+        </div>
+    </div>
+</section>

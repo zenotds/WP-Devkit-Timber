@@ -1,0 +1,32 @@
+{# Layout "posts" del flexible content: estrazione post (ultimi / per categoria / selezione manuale) in carosello, centrato se poche slide. Riusa tease-card.twig, module_posts() (functions/twig.php) e l'init .posts-slider (dev/js/scripts.js) #}
+{% set tag = content.tag|default('h2') %}
+{% set bg = content.bg|default('none') %}
+{% set items = module_posts(content) %}
+
+<section class="block-posts" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}"{% if bg != 'none' %} data-bg="{{ bg }}"{% endif %}>
+    <div class="container mx-auto">
+
+        {% if content.title or content.subtitle %}
+            <div class="intro mb-8 grid gap-6 lg:mb-12 lg:grid-cols-2 lg:items-start lg:gap-16">
+                {% if content.title %}
+                    <{{ tag }} class="title typo-h text-{{ tag }}">{{ content.title }}</{{ tag }}>
+                {% endif %}
+                {% if content.subtitle %}
+                    <p class="subtitle text-lead">{{ content.subtitle }}</p>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {% if items %}
+            <div class="posts-slider swiper">
+                <div class="swiper-wrapper">
+                    {% for post in items %}
+                        <div class="swiper-slide h-auto">{% include 'tease-card.twig' %}</div>
+                    {% endfor %}
+                </div>
+                <div class="swiper-pagination"></div>
+            </div>
+        {% endif %}
+
+    </div>
+</section>
