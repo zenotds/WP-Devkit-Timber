@@ -1,10 +1,10 @@
 {% macro nav_item(item) %}
-    <div class="nav-item {% if item.current or 'current-menu-ancestor' in item.class or 'current-menu-parent' in item.class %}active{% endif %} {{ item.class }} flex border-b border-black/15 hover:text-verde p-4 min-h-10 gap-4" role="none">
+    <div class="nav-item {% if item.current or 'current-menu-ancestor' in item.class or 'current-menu-parent' in item.class %}active{% endif %} {{ item.class }} flex border-b border-black/15 hover:text-accent p-4 min-h-10 gap-4" role="none">
         <a class="nav-link font-base relative flex w-full self-center py-2 leading-none font-semibold whitespace-normal" href="{{ item.url }}" target="{{ item.target }}" role="menuitem" {% if item.current %}aria-current="page"{% endif %}>
             {{ item.name }}
         </a>
         {% if item.children %}
-            <button class="menu-toggle flex h-10 w-10 shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-verde p-0 tracking-normal text-white hover:bg-verde/80" @click="$dispatch('menu-{{ item.id }}')" aria-label="{{ __('Apri sottomenu', 'theme') }} {{ item.name }}" aria-controls="menu-{{ item.id }}" aria-expanded="false">
+            <button class="menu-toggle flex h-10 w-10 shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-accent p-0 tracking-normal text-white hover:bg-accent/80" @click="$dispatch('menu-{{ item.id }}')" aria-label="{{ __('Apri sottomenu', 'theme') }} {{ item.name }}" aria-controls="menu-{{ item.id }}" aria-expanded="false">
                 <i class="fal fa-angle-right" aria-hidden="true"></i>
             </button>
         {% endif %}
@@ -21,7 +21,7 @@
             <div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-1000 overflow-y-auto transition-all duration-500 max-w-full w-100" :class="{ 'active': offcanvas }" role="dialog" aria-modal="true" aria-labelledby="submenu-title-{{ item.id }}" x-trap.inert.noscroll="offcanvas">
 
                 <div class="header border-b border-black/15 flex items-center p-4">
-                    <button class="action close me-auto flex h-10 w-10 shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-verde p-0 tracking-normal text-white hover:bg-verde/80" @click="offcanvas = false" aria-label="{{ __('Torna indietro', 'theme') }}">
+                    <button class="action close me-auto flex h-10 w-10 shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-accent p-0 tracking-normal text-white hover:bg-accent/80" @click="offcanvas = false" aria-label="{{ __('Torna indietro', 'theme') }}">
                         <i class="far fa-arrow-left" aria-hidden="true"></i>
                     </button>
                     <span id="submenu-title-{{ item.id }}" class="current font-semibold text-lg uppercase">
@@ -57,7 +57,7 @@
 
         <div class="header border-b border-black/15 flex items-center p-4">
 
-            <button class="action close me-auto flex h-10 w-10 shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-verde p-0 tracking-normal text-white hover:bg-verde/80" @click="offcanvas = false" aria-label="{{ __('Chiudi menu', 'theme') }}">
+            <button class="action close me-auto flex h-10 w-10 shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-accent p-0 tracking-normal text-white hover:bg-accent/80" @click="offcanvas = false" aria-label="{{ __('Chiudi menu', 'theme') }}">
                 <i class="far fa-times" aria-hidden="true"></i>
             </button>
 
@@ -70,7 +70,7 @@
 
             {# Utility: top menu links #}
             {% if top_menu.items %}
-                <div class="mobile-utility top-menu bg-verde text-white flex flex-col" role="menu" aria-label="{{ __('Menu secondario', 'theme') }}">
+                <div class="mobile-utility top-menu bg-accent text-white flex flex-col" role="menu" aria-label="{{ __('Menu secondario', 'theme') }}">
                     {% for item in top_menu.items %}
                         <a class="group flex items-center gap-4 p-4 min-h-10 font-semibold leading-none text-white hover:text-white/70 {% if not loop.last %}border-b border-white/15{% endif %}" href="{{ item.link }}" target="{{ item.target }}" role="menuitem">
                             {{ item.title }}
@@ -93,7 +93,7 @@
                     <span class="font-semibold">{{ __('Seguici', 'theme') }}</span>
                     <div class="social-links flex items-center gap-2 ms-auto" role="group" aria-label="{{ __('Seguici', 'theme') }}">
                         {% for social in settings.company_social %}
-                            <a class="flex h-10 w-10 items-center justify-center rounded bg-verde text-lg text-white hover:bg-verde/80" href="{{ social.link }}" title="{{ social.social }}" target="_blank" rel="noopener">
+                            <a class="flex h-10 w-10 items-center justify-center rounded bg-accent text-lg text-white hover:bg-accent/80" href="{{ social.link }}" title="{{ social.social }}" target="_blank" rel="noopener">
                                 <i class="fab fa-{{ social.icon }}" aria-hidden="true"></i>
                             </a>
                         {% endfor %}

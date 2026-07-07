@@ -21,6 +21,11 @@ body {
 	}
 }
 
+/* Anti-FOUC Alpine (VITALE, replicata inline in html/head.twig): senza, overlay e dropdown coprono la pagina prima dell'init */
+[x-cloak] {
+	display: none !important;
+}
+
 /* Picture block fix */
 picture {
 	display: block;

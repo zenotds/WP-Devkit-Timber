@@ -4,9 +4,9 @@
             a,
             button,
             span:not(.dots) {
-                @apply flex min-h-10 min-w-10 items-center justify-center rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm font-bold text-verde transition-colors duration-200;
-                @apply hover:border-verde hover:bg-verde hover:text-white;
-                @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-verde;
+                @apply flex min-h-10 min-w-10 items-center justify-center rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm font-bold text-accent transition-colors duration-200;
+                @apply hover:border-accent hover:bg-accent hover:text-white;
+                @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
                 @apply disabled:pointer-events-none disabled:border-neutral-200 disabled:bg-white disabled:text-neutral-400 disabled:opacity-60;
             }
 
@@ -32,7 +32,7 @@
                 a,
                 button,
                 span:not(.dots) {
-                    @apply border-verde bg-verde text-white;
+                    @apply border-accent bg-accent text-white;
                 }
             }
 

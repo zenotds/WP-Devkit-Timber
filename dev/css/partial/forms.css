@@ -84,7 +84,7 @@
 			}
 
 			&:checked {
-				@apply bg-verde;
+				@apply bg-accent;
 			}
 		}
 
@@ -93,7 +93,7 @@
 				@apply font-semibold underline;
 
 				&:hover {
-					@apply text-verde;
+					@apply text-accent;
 				}
 			}
 		}

@@ -1,0 +1,99 @@
+/* Sfondi sezione via data-bg (campo ACF `bg`: none | light | dark). Il padding coincide col ritmo base di .main > * (vedi common.css) — ridichiarato qui per i data-bg fuori dal flusso */
+[data-bg="light"],
+[data-bg="dark"] {
+	padding-block: var(--section-pad, calc(var(--spacing) * 12));
+}
+
+[data-bg="light"] {
+	background: var(--color-light);
+}
+
+[data-bg="dark"] {
+	background: var(--color-dark);
+}
+
+/* ── Dark: inverte i token testuali. Gli span .alt restano accent per scelta di brand ── */
+[data-bg="dark"] {
+	color: white;
+
+	.typo-h,
+	.text-accent {
+		color: white;
+	}
+
+	.typo-r {
+		a:not(.btn) {
+			color: rgba(255 255 255 / 0.9);
+
+			&:hover {
+				color: rgba(255 255 255 / 0.6);
+			}
+		}
+
+		h1,
+		h2,
+		h3,
+		h4,
+		h5,
+		blockquote,
+		li::marker {
+			color: white;
+		}
+	}
+
+	/* Elementi con superficie chiara propria (card, accordion: classe .surface) dentro la sezione dark: il testo NON va invertito, resta scuro/accent (più specifico → vince) */
+	.surface {
+		color: var(--color-dark);
+
+		.typo-h {
+			color: var(--color-dark);
+		}
+
+		.text-accent {
+			color: var(--color-accent);
+		}
+
+		.typo-r {
+			a:not(.btn) {
+				color: var(--color-accent);
+
+				&:hover {
+					color: var(--color-dark);
+				}
+			}
+
+			h1,
+			h2,
+			h3,
+			h4,
+			h5,
+			blockquote {
+				color: var(--color-dark);
+			}
+
+			li::marker {
+				color: var(--color-accent);
+			}
+		}
+	}
+}
+
+/* ── Immagine di sfondo additiva a data-bg: la foto (macro image(), responsive AVIF/WebP) è inline in absolute dietro al contenuto (.bg-media), resa in grayscale + multiply così si fonde col colore data-bg (none→bianco, light→grigio, dark→scuro). L'inversione testo segue il data-bg (vedi sopra). isolation:isolate confina la fusione alla sezione. ── */
+.has-bg-image {
+	position: relative;
+	isolation: isolate;
+}
+
+.bg-media {
+	filter: grayscale(1);
+	mix-blend-mode: multiply;
+}
+
+/* La fusione multiply ha bisogno di una base colore: data-bg light/dark la danno già; none → bianco. Su none la foto grayscale resterebbe a piena intensità: la attenuo (velo bianco) abbassando l'opacità così sfuma verso la base bianca e il testo scuro resta leggibile */
+[data-bg="none"].has-bg-image {
+	background-color: white;
+
+	.bg-media {
+		opacity: 0.35;
+	}
+}

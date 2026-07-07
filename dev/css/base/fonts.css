@@ -1,0 +1,15 @@
+/* Webfont del progetto.
+   1. Metti i woff2 in assets/webfonts/
+   2. Scommenta/adatta i @font-face (il build normalizza i percorsi in ../webfonts/)
+   3. Aggiorna --font-base nel blocco @theme di styles.css
+   4. Aggiungi i preload in functions/enqueue.php (theme_preload_assets) */
+
+/*
+@font-face {
+	font-family: "Font Name";
+	src: url("../webfonts/font-name-variable.woff2") format("woff2");
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}
+*/

@@ -22,8 +22,8 @@
             @apply h-auto hover:bg-slate-500 bg-sky-50 hover:text-white;
         }
 
-        &.cta-verde {
-            @apply bg-verde text-white;
+        &.cta-accent {
+            @apply bg-accent text-white;
         }
     }
 }

@@ -6,15 +6,22 @@
 
 /* Base */
 @import "./base/base";
+@import "./base/fonts";
 @import "./base/typography";
 @import "./base/custom";
 
+/* FontAwesome Pro — aggiunta manuale per progetto:
+   copia i CSS in dev/css/fontawesome/ e i woff2 in assets/webfonts/, poi scommenta */
+/* @import "./fontawesome/fontawesome"; */
+/* @import "./fontawesome/solid"; */
+/* @import "./fontawesome/brands"; */
+
 /* SwiperJS */
-/* @import "../../node_modules/swiper/swiper"; */
-/* @import "../../node_modules/swiper/modules/pagination"; */
-/* @import "../../node_modules/swiper/modules/navigation"; */
-/* @import "../../node_modules/swiper/modules/effect-fade"; */
-/* @import "./plugins/swiper"; */
+@import "../../node_modules/swiper/swiper";
+@import "../../node_modules/swiper/modules/pagination";
+@import "../../node_modules/swiper/modules/navigation";
+@import "../../node_modules/swiper/modules/effect-fade";
+@import "./plugins/swiper";
 
 /* vLitejs player */
 @import "../../node_modules/vlitejs/dist/vlite.css";
@@ -25,23 +32,49 @@
 @import "../../node_modules/venobox/dist/venobox.min.css";
 @import "./plugins/venobox";
 
-/* Partial */
+/* Layout (ritmo verticale sezioni + sfondi data-bg) */
+@import "./layout/common";
+@import "./layout/section-bg";
+
+/* Partial (scope globale) */
 @import "./partial/buttons";
 @import "./partial/forms";
 @import "./partial/main-menu";
 @import "./partial/mobile-menu";
 @import "./partial/pagination";
 
+/* Components (scope di modulo: un file per block-* che ne ha bisogno) */
+/* @import "./components/nome-modulo"; */
+
 /* Tailwind theme variables */
+/* Palette funzionale e scala tipografica fluida (reference 1920px → ~375px):
+   adatta i valori alla grafica di progetto, mantieni i NOMI dei token */
 @theme {
-	--color-verde: #609422;
+	--color-accent: #609422; /* Colore brand principale */
+	--color-light: #f2f1f0; /* Sfondo sezioni chiare (data-bg="light") */
+	--color-dark: #22262a; /* Sfondo sezioni scure (data-bg="dark") + testi forti */
+	--color-darker: #121417; /* Variante più scura (footer, overlay) */
 	--breakpoint-3xl: 112rem;
-	--font-poppins: "Poppins", sans-serif;
-	--text-h1: clamp(2rem, 1.5rem + 2vw, 3.25rem);
-	--text-h2: clamp(1.75rem, 1.4rem + 1.5vw, 2.5rem);
-	--text-h3: clamp(1.5rem, 1.25rem + 1.25vw, 2rem);
-	--text-h4: clamp(1.25rem, 1.1rem + 0.75vw, 1.75rem);
-	--text-h5: clamp(1.125rem, 1rem + 0.5vw, 1.5rem);
+	--shadow-custom: 0 0 1rem rgba(0, 0, 0, 0.15);
+	--font-base: ui-sans-serif, system-ui, sans-serif;
+	--text-hero: clamp(2.5rem, 2.1359rem + 1.553vw, 4rem);
+	--text-hero--line-height: 0.97;
+	--text-h1: clamp(2rem, 1.818rem + 0.777vw, 2.75rem);
+	--text-h1--line-height: 1.05;
+	--text-h2: clamp(1.75rem, 1.568rem + 0.777vw, 2.5rem);
+	--text-h2--line-height: 1.05;
+	--text-h3: clamp(1.5rem, 1.3786rem + 0.518vw, 2rem);
+	--text-h3--line-height: 1.06;
+	--text-h4: clamp(1.25rem, 1.1893rem + 0.259vw, 1.5rem);
+	--text-h4--line-height: 1.08;
+	--text-h5: clamp(1.125rem, 1.0643rem + 0.259vw, 1.375rem);
+	--text-h5--line-height: 1.1;
+	--text-h6: clamp(1.125rem, 1.0947rem + 0.129vw, 1.25rem);
+	--text-h6--line-height: 1.2;
+	--text-lead: clamp(1.0625rem, 1.017rem + 0.194vw, 1.25rem);
+	--text-lead--line-height: 1.4;
+	--text-quote: clamp(1.5rem, 1.3786rem + 0.518vw, 2rem);
+	--text-quote--line-height: 1.3;
 }
 
 /* Tailwind utilities */

@@ -38,8 +38,8 @@ const reducedMotion = window.matchMedia(
 // Shared Lenis instance — null when reduced motion is on or init failed
 let lenis = null;
 
-// Debug — set to false to silence logs
-const DEBUG = true;
+// Debug — iniettato da esbuild: true in dev, false in produzione
+const DEBUG = process.env.NODE_ENV !== "production";
 
 function log(...args) {
     if (DEBUG) console.log(...args);
@@ -132,31 +132,36 @@ function initAnchors() {
     });
 }
 
-// Scroll reveals: page-builder blocks ([data-loop]) fade in on first view.
-// batch() staggers blocks that enter the viewport together; clearProps
-// removes the inline transform afterwards so sticky/positioned children
-// aren't affected.
+// Scroll reveal dei [data-loop]. Trigger per-elemento e non ScrollTrigger.batch:
+// il batch non rivela i blocchi già oltre il viewport al reload, lasciandoli col
+// transform inline (un full-bleed così sfora in orizzontale). clearProps rimuove
+// il transform inline a fine animazione per non disturbare figli sticky/positioned.
 function initReveals() {
     if (reducedMotion) return;
 
     const blocks = gsap.utils.toArray("[data-loop]");
     if (!blocks.length) return;
 
-    gsap.set(blocks, { autoAlpha: 0, y: 32 });
+    for (const el of blocks) {
+        // Già in zona reveal all'init (above the fold): resta dipinto, niente flash nascondi-e-rianima
+        if (el.getBoundingClientRect().top < window.innerHeight * 0.85) continue;
 
-    ScrollTrigger.batch(blocks, {
-        start: "top 85%",
-        once: true,
-        onEnter: (batch) =>
-            gsap.to(batch, {
-                autoAlpha: 1,
-                y: 0,
-                duration: 0.7,
-                ease: "power2.out",
-                stagger: 0.12,
-                clearProps: "all",
-            }),
-    });
+        gsap.set(el, { autoAlpha: 0, y: 32 });
+
+        ScrollTrigger.create({
+            trigger: el,
+            start: "top 85%",
+            once: true,
+            onEnter: () =>
+                gsap.to(el, {
+                    autoAlpha: 1,
+                    y: 0,
+                    duration: 0.7,
+                    ease: "power2.out",
+                    clearProps: "all",
+                }),
+        });
+    }
 }
 
 // Cover parallax: full-bleed header images ([data-parallax]) drift slower
@@ -197,6 +202,12 @@ function initGsap() {
 
 function initVenoBox() {
     if (!document.querySelector(".venobox")) return;
+
+    // Toglie .venobox dalle eventuali slide clonate da Swiper (loop) per non duplicare le voci in lightbox
+    for (const el of document.querySelectorAll(".swiper-slide-duplicate .venobox")) {
+        el.classList.remove("venobox");
+    }
+
     new VenoBox({
         selector: ".venobox",
         spinner: "wave",
@@ -235,6 +246,35 @@ function initVideoPlayers() {
     }
 }
 
+// Video di sfondo [data-visual]: autoplay muto in loop, senza controlli
+function initVisualPlayers() {
+    for (const el of document.querySelectorAll(".player[data-visual]")) {
+        const { title, provider, poster } = el.dataset;
+
+        const config = {
+            options: {
+                autoplay: true,
+                muted: true,
+                loop: true,
+                playsinline: true,
+                controls: false,
+                poster: poster || null,
+            },
+            onReady: () => log(`🎥 Visual player initialized: ${title || "Untitled"}`),
+        };
+        if (provider) {
+            ensurePlayerId(el);
+            config.provider = provider;
+        }
+
+        try {
+            new Vlitejs(el, config);
+        } catch (err) {
+            error(`Failed to initialize visual player:`, err);
+        }
+    }
+}
+
 function initSwiper() {
     Swiper.use([Navigation, Pagination, Autoplay, EffectFade, Mousewheel, A11y]);
 
@@ -260,6 +300,74 @@ function initSwiper() {
             },
         });
     }
+
+    // Gallery dei moduli (Columns/Media): data-per-view (default 1) = slide visibili
+    // da desktop, >1 = carosello responsive; watchOverflow disattiva swiper/paginazione
+    // quando entrano tutte
+    for (const el of document.querySelectorAll(".media-slider")) {
+        const per = parseInt(el.dataset.perView || "1", 10);
+        const slides = el.querySelectorAll(".swiper-slide").length;
+        const prev = el.querySelector(".media-prev");
+        const next = el.querySelector(".media-next");
+        new Swiper(el, {
+            slidesPerView: 1,
+            spaceBetween: per > 1 ? 24 : 0,
+            // Loop solo con più slide di quelle visibili: col loop watchOverflow non blocca
+            // e la paginazione resta anche quando entrano tutte
+            loop: slides > per,
+            watchOverflow: true,
+            pagination: {
+                el: el.querySelector(".swiper-pagination"),
+                clickable: true,
+            },
+            navigation: prev && next ? { prevEl: prev, nextEl: next } : false,
+            breakpoints:
+                per > 1
+                    ? { 640: { slidesPerView: 2 }, 1024: { slidesPerView: per } }
+                    : undefined,
+        });
+    }
+
+    // Carosello card/post (modulo Posts e simili): 1/2/3 per breakpoint, centra se poche,
+    // no loop. watchSlidesProgress: la classe .posts-slider (dev/css/plugins/swiper.css)
+    // nasconde le slide senza .swiper-slide-visible, assegnata solo con l'opzione attiva.
+    for (const el of document.querySelectorAll(".posts-slider")) {
+        new Swiper(el, {
+            slidesPerView: 1,
+            spaceBetween: 24,
+            centerInsufficientSlides: true,
+            watchOverflow: true,
+            watchSlidesProgress: true,
+            pagination: {
+                el: el.querySelector(".swiper-pagination"),
+                clickable: true,
+            },
+            breakpoints: {
+                640: { slidesPerView: 2 },
+                1280: { slidesPerView: 3 },
+            },
+        });
+    }
+}
+
+// Apre il popup (partial/popup.twig) dagli elementi .popup-trigger o da un link con
+// href="#popup" (utile per i campi ACF link, es. bottoni dei moduli).
+function initPopupTriggers() {
+    document.addEventListener("click", (e) => {
+        const trigger = e.target.closest('.popup-trigger, a[href$="#popup"]');
+        if (!trigger) return;
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent("popup"));
+    });
+}
+
+// Redirect alla thank-you page dopo l'invio CF7: legge data-typ dal wrapper .form
+// (campo ACF "typ" accanto al campo form)
+function initFormRedirects() {
+    document.addEventListener("wpcf7mailsent", (e) => {
+        const typ = e.target.closest("[data-typ]")?.dataset.typ;
+        if (typ) window.location.assign(typ);
+    });
 }
 
 // Animate numbers on scroll. Values are free text ("+300", ">5.000 kg"):
@@ -337,6 +445,9 @@ ready(() => {
     safeInit("Parallax", initParallax);
     safeInit("VenoBox", initVenoBox);
     safeInit("Video Players", initVideoPlayers);
+    safeInit("Visual Players", initVisualPlayers);
+    safeInit("Popup Triggers", initPopupTriggers);
+    safeInit("Form Redirects", initFormRedirects);
 
     showCredits();
     log("✨ Application ready!");

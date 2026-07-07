@@ -11,9 +11,9 @@
 			}
 		}
 
-		&.cta-verde {
+		&.cta-accent {
 			.nav-link {
-				@apply bg-verde text-white hover:bg-slate-500;
+				@apply bg-accent text-white hover:bg-slate-500;
 			}
 		}
 
@@ -23,7 +23,7 @@
 		&:focus-within {
 			&:not(.cta) {
 				.nav-link {
-					@apply text-verde after:scale-y-100;
+					@apply text-accent after:scale-y-100;
 				}
 			}
 		}

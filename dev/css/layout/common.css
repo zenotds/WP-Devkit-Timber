@@ -1,0 +1,55 @@
+.main {
+	/* Stack verticale di sezioni: flex-col (non grid) così i figli restano vincolati alla larghezza del container — evita l'overflow del min-width:auto della grid su caroselli/media larghi */
+	/* Ritmo verticale: ogni sezione porta lo stesso padding sopra e sotto (il padding non collassa); le sezioni con sfondo lo dipingono e si saldano tra loro senza pseudo-elementi. Spazio inizio modulo → contenuto identico con e senza sfondo. */
+	--section-gap: calc(var(--spacing) * 12);
+	/* Padding verticale di una sezione (= mezzo gap + 4). Variabile unica per ritmo e data-bg */
+	--section-pad: calc(var(--section-gap) / 2 + var(--spacing) * 4);
+	@apply flex flex-col mb-6 md:mb-8 lg:mb-10 xl:mb-12;
+
+	@media (width >= theme(--breakpoint-md)) {
+		--section-gap: calc(var(--spacing) * 16);
+	}
+	@media (width >= theme(--breakpoint-lg)) {
+		--section-gap: calc(var(--spacing) * 20);
+	}
+	@media (width >= theme(--breakpoint-xl)) {
+		--section-gap: calc(var(--spacing) * 24);
+	}
+
+	> * {
+		padding-block: var(--section-pad);
+	}
+
+	/* La prima sezione sta attaccata all'header del sito (page-header, visual homepage) */
+	> :first-child {
+		padding-top: 0;
+	}
+
+	/* Il page-header non porta il ritmo in basso: lo spazio lo dà il padding-top del primo modulo (niente doppio bianco) e un'intestazione con sfondo si salda al modulo successivo */
+	> .page-header {
+		padding-bottom: 0;
+	}
+
+	/* Il panel è una banda full-bleed: niente ritmo sulla sezione, così l'immagine resta a filo sopra/sotto e lo sfondo riempie tutta la banda saldandosi ai moduli adiacenti. Lo spazio verticale interno lo dà la colonna contenuto. Due panel consecutivi si attaccano. Eventuali altre sezioni edge-to-edge di progetto (mappe, visual) vanno aggiunte qui e nelle esclusioni sotto. */
+	> .block-panel {
+		padding-block: 0;
+	}
+
+	/* Due moduli SENZA sfondo consecutivi: niente doppio padding pieno (sarebbe 2× il gap delle altre coppie e creerebbe troppo vuoto). Il secondo dimezza il padding-top → gap = 1.5× il padding singolo: più ampio del solo bottom del primo, meno del doppio. I moduli con data-bg restano esclusi (si saldano, il padding è "dentro" la banda colorata); i full-bleed (page-header/panel) sono esclusi perché non portano padding-bottom. */
+	> :not([data-bg], .page-header, .block-panel)
+		+ :not([data-bg], .page-header, .block-panel) {
+		padding-top: calc(var(--section-pad) / 2);
+	}
+
+	/* Primo modulo SENZA sfondo dopo una banda con data-bg: il padding-bottom della banda è colorato (non è spazio bianco), quindi il solo padding-top pieno schiaccerebbe il modulo contro la banda. Lo porto a 1.5× → lo stacco bianco sopra eguaglia il ritmo bianco-bianco. */
+	> [data-bg]
+		+ :not([data-bg], .page-header, .block-panel) {
+		padding-top: calc(var(--section-pad) * 1.5);
+	}
+}
+
+/* Esce dal container per occupare tutta la larghezza viewport (es. gallery fullscreen) */
+.full-bleed {
+	width: 100vw;
+	margin-inline: calc(50% - 50vw);
+}

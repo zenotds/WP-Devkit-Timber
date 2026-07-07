@@ -1,7 +1,7 @@
 @layer components {
 
 .typo-h {
-	@apply font-bold text-balance leading-tight text-verde;
+	@apply font-bold text-balance leading-tight text-accent;
 }
 
 .typo-l {
@@ -67,10 +67,10 @@
 	}
 
 	a:not(.btn) {
-		@apply text-verde font-semibold underline;
+		@apply text-accent font-semibold underline;
 
 		&:hover {
-			@apply text-verde/50;
+			@apply text-accent/50;
 		}
 	}
 
@@ -87,7 +87,7 @@
 			&::before {
 				content: "\e122";
 				font-family: var(--font-icons);
-				@apply absolute left-0 text-verde;
+				@apply absolute left-0 text-accent;
 				top: 0.15em;
 				line-height: 1;
 				width: 1em;
@@ -122,7 +122,7 @@
 	}
 
 	blockquote {
-		@apply ml-12 leading-[1.2] text-balance text-verde mb-6;
+		@apply ml-12 leading-[1.2] text-balance text-accent mb-6;
 		font-size: clamp(1.25rem, 1rem + 1.25vw, 2rem);
 	}
 

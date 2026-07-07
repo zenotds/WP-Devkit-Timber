@@ -174,7 +174,8 @@
 {# Self-hosted MP4. options: poster, title, class, visual (hero marker), background (muted + loop + no PiP) #}
 {% macro mp4(src, options = {}) %}
     {% set config = { poster: null, title: null, class: '', visual: false, background: false }|merge(options) %}
-    <video class="player {{ config.class }}" {{ config.visual ? 'data-visual' }} {% if config.title %} data-title="{{ config.title }}" {% endif %} src="{{ src }}" {% if config.poster %} data-poster="{{ config.poster }}" {% endif %} playsinline {{ config.background ? 'muted loop disablepictureinpicture' }}></video>
+    {# poster anche nativo: il browser lo dipinge subito (LCP), senza aspettare l'init vLite #}
+    <video class="player {{ config.class }}" {{ config.visual ? 'data-visual' }} {% if config.title %} data-title="{{ config.title }}" {% endif %} src="{{ src }}" {% if config.poster %} poster="{{ config.poster }}" data-poster="{{ config.poster }}" {% endif %} playsinline preload="metadata" {{ config.background ? 'muted loop disablepictureinpicture' }}></video>
 {% endmacro %}
 
 {# YouTube/Vimeo embed (see |video_provider, |video_id). options: poster, class, visual #}
