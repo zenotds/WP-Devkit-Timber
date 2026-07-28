@@ -55,3 +55,4 @@
 5. `npm run build` prima di ogni deploy
 
 Convenzioni complete: `.claude/CLAUDE.md`. Stato del progetto: `.claude/PROJECT.md`.
+Entrambi sono file di lavoro **locali e non versionati**: portali a mano nel progetto.
