@@ -1,29 +1,40 @@
 .swiper-button-disabled {
-	@apply opacity-25 pointer-events-none;
+	opacity: 0.25;
+	pointer-events: none;
 }
 
 /* Viewport di clipping: fa spazio alle ombre delle slide senza toccare i calcoli width/overflow di Swiper; il margine negativo recupera il padding e tiene le slide allineate al container */
 .slider-viewport {
-	@apply -mx-5 overflow-hidden p-5;
+	margin-inline: calc(var(--spacing) * -5);
+	padding: calc(var(--spacing) * 5);
+	overflow: hidden;
 }
 
 /* Caroselli card/post — slide di pari altezza, ombre fuori dai bordi (clip sul viewport), paginazione centrata */
 .cards-slider,
 .posts-slider {
-	@apply overflow-visible!;
+	overflow: visible !important;
 
 	/* Sovrascrive height:100% di Swiper così il flex stretch pareggia le altezze */
 	.swiper-slide {
-		@apply h-auto min-w-0 transition-opacity duration-300;
+		height: auto;
+		min-width: 0;
+		transition: opacity 300ms;
 	}
 
 	/* Impedisce al contenuto della slide di superare la larghezza del track */
 	.swiper-slide > * {
-		@apply h-full min-w-0 w-full;
+		height: 100%;
+		width: 100%;
+		min-width: 0;
 	}
 
 	.swiper-pagination {
-		@apply static! mt-6 flex w-full! justify-center;
+		position: static !important;
+		width: 100% !important;
+		margin-top: calc(var(--spacing) * 6);
+		display: flex;
+		justify-content: center;
 	}
 }
 
@@ -32,51 +43,67 @@
 .cards-slider,
 .posts-slider {
 	&.swiper-initialized .swiper-slide:not(.swiper-slide-visible) {
-		@apply opacity-0;
+		opacity: 0;
 	}
 }
 
 /* Paginazione bloccata da watchOverflow (slide tutte visibili): le nostre .swiper-pagination (display:flex, 2 classi) battono il display:none di Swiper, va rinascosta qui */
 .swiper-pagination-lock {
-	@apply hidden!;
+	display: none !important;
 }
 
 /* Slider dei moduli (gallery Columns/Media): slide di pari altezza, la slide h-auto si stira col flex e il contenuto la riempie */
 .media-slider .swiper-slide {
-	@apply h-auto;
+	height: auto;
 }
 .media-slider .swiper-slide > * {
-	@apply h-full;
+	height: 100%;
 }
 
 /* Pallini centrati sotto lo slider (di default assoluti, coprono il contenuto) */
 .media-slider > .swiper-pagination {
-	@apply static! mt-6 flex w-full! justify-center;
+	position: static !important;
+	width: 100% !important;
+	margin-top: calc(var(--spacing) * 6);
+	display: flex;
+	justify-content: center;
 }
 
 /* Barra di navigazione gallery (viste contenuta/full-width): frecce + pallini in linea */
 .media-nav .swiper-pagination {
-	@apply static! m-0 flex w-auto! items-center;
+	position: static !important;
+	width: auto !important;
+	margin: 0;
+	display: flex;
+	align-items: center;
 }
 
 .swiper-pagination-bullets {
-	@apply w-auto!;
+	width: auto !important;
 
 	/* Default: pallino vuoto con bordo accent, attivo pieno accent. Eccezione: .light (gallery fullscreen) */
 	.swiper-pagination-bullet {
-		@apply h-4 w-4 border-2 border-accent bg-transparent opacity-100;
+		height: calc(var(--spacing) * 4);
+		width: calc(var(--spacing) * 4);
+		border: 2px solid var(--color-accent);
+		background: transparent;
+		opacity: 1;
 
 		&.swiper-pagination-bullet-active {
-			@apply bg-accent;
+			background: var(--color-accent);
 		}
 	}
 
 	&.light {
 		.swiper-pagination-bullet {
-			@apply h-4 w-4 border-0 bg-white opacity-100;
+			height: calc(var(--spacing) * 4);
+			width: calc(var(--spacing) * 4);
+			border: 0;
+			background: white;
+			opacity: 1;
 
 			&.swiper-pagination-bullet-active {
-				@apply bg-accent;
+				background: var(--color-accent);
 			}
 		}
 	}

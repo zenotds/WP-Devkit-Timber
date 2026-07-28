@@ -1,0 +1,11 @@
+{
+	"proxy": "https://your-site.test",
+	"browser": ["default"],
+	"watch": [
+		"./templates/",
+		"./blocks/",
+		"./woocommerce/",
+		"./dev/css/",
+		"./dev/js/"
+	]
+}

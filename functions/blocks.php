@@ -83,7 +83,7 @@ add_filter('acf/settings/load_json', function ($paths) {
     return array_merge($paths, array_values(get_custom_blocks()));
 });
 
-// Salva il field group nella cartella del blocco (location rule: block == bizen/<slug>)
+// Salva il field group nella cartella del blocco (location rule: block == <namespace>/<slug>)
 add_filter('acf/json/save_paths', function ($paths, $post) {
     foreach ($post['location'] ?? [] as $group) {
         foreach ($group as $rule) {
@@ -114,7 +114,7 @@ add_filter('acf/json/save_file_name', function ($filename, $post) {
  * Render callback generico: ogni blocco renderizza blocks/<slug>/<slug>.twig
  * via Timber. Firma ACF: il primo parametro è l'array $block.
  */
-function bizen_block_render($block, $content = '', $is_preview = false, $post_id = 0, $wp_block = null, $context = false)
+function theme_block_render($block, $content = '', $is_preview = false, $post_id = 0, $wp_block = null, $context = false)
 {
     $slug = str_replace(THEME_NAMESPACE . '/', '', $block['name']);
 

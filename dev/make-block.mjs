@@ -23,8 +23,8 @@ function themeNamespace() {
 		const match = config.match(/define\(\s*'THEME_NAMESPACE'\s*,\s*'([^']+)'\s*\)/);
 		if (match) return match[1];
 	} catch {}
-	console.warn("⚠️ THEME_NAMESPACE non trovato in functions/config.php, uso 'bizen'.");
-	return "bizen";
+	console.warn("⚠️ THEME_NAMESPACE non trovato in functions/config.php, uso 'theme'.");
+	return "theme";
 }
 const NAMESPACE = themeNamespace();
 

@@ -1,16 +1,21 @@
-@layer components {
-
 .typo-h {
-	@apply font-bold text-balance leading-tight text-accent;
+	font-weight: 700;
+	line-height: 1.25;
+	text-wrap: balance;
+	color: var(--color-accent);
 }
 
 .typo-l {
-	@apply text-balance font-normal text-xs leading-tight;
+	font-weight: 400;
+	font-size: var(--text-xs);
+	line-height: 1.25;
+	text-wrap: balance;
 }
 
 /* Rich text (WYSIWYG output) */
 .typo-r {
-	@apply leading-normal font-normal;
+	font-weight: 400;
+	line-height: 1.5;
 
 	img {
 		max-width: 100%;
@@ -21,7 +26,9 @@
 	h3,
 	h4,
 	h5 {
-		@apply font-bold text-balance leading-tight;
+		font-weight: 700;
+		line-height: 1.25;
+		text-wrap: balance;
 	}
 
 	h2 {
@@ -44,50 +51,60 @@
 	* + h3,
 	* + h4,
 	* + h5 {
-		@apply mt-8;
+		margin-top: calc(var(--spacing) * 8);
 	}
 
 	h2:has(+ *),
 	h3:has(+ *),
 	h4:has(+ *),
 	h5:has(+ *) {
-		@apply mb-2;
+		margin-bottom: calc(var(--spacing) * 2);
 	}
 
 	p {
-		@apply mb-4;
+		margin-bottom: calc(var(--spacing) * 4);
 
 		&:last-child {
-			@apply mb-0;
+			margin-bottom: 0;
 		}
 	}
 
 	hr {
-		@apply my-6 border border-black/15;
+		margin-block: calc(var(--spacing) * 6);
+		border: 1px solid rgb(0 0 0 / 0.15);
 	}
 
 	a:not(.btn) {
-		@apply text-accent font-semibold underline;
+		color: var(--color-accent);
+		font-weight: 600;
+		text-decoration-line: underline;
 
 		&:hover {
-			@apply text-accent/50;
+			color: color-mix(in oklab, var(--color-accent) 50%, transparent);
 		}
 	}
 
 	ul {
-		@apply mb-6 flex flex-col;
+		display: flex;
+		flex-direction: column;
+		margin-bottom: calc(var(--spacing) * 6);
 
 		&:last-child {
-			@apply mb-0;
+			margin-bottom: 0;
 		}
 
 		li {
-			@apply relative list-none mb-2 pl-5;
+			position: relative;
+			list-style-type: none;
+			margin-bottom: calc(var(--spacing) * 2);
+			padding-left: calc(var(--spacing) * 5);
 
 			&::before {
 				content: "\e122";
 				font-family: var(--font-icons);
-				@apply absolute left-0 text-accent;
+				position: absolute;
+				left: 0;
+				color: var(--color-accent);
 				top: 0.15em;
 				line-height: 1;
 				width: 1em;
@@ -100,59 +117,77 @@
 		}
 
 		ul {
-			@apply mt-6 ml-6;
+			margin-top: calc(var(--spacing) * 6);
+			margin-left: calc(var(--spacing) * 6);
 		}
 	}
 
 	ol {
-		@apply mb-6 flex flex-col pl-4;
+		display: flex;
+		flex-direction: column;
+		margin-bottom: calc(var(--spacing) * 6);
+		padding-left: calc(var(--spacing) * 4);
 
 		&:last-child {
-			@apply mb-0;
+			margin-bottom: 0;
 		}
 
 		li {
-			@apply relative list-decimal mb-1 marker:font-bold;
+			position: relative;
+			list-style-type: decimal;
+			margin-bottom: calc(var(--spacing) * 1);
+
+			&::marker {
+				font-weight: 700;
+			}
 		}
 
 		ul,
 		ol {
-			@apply mt-6 ml-6;
+			margin-top: calc(var(--spacing) * 6);
+			margin-left: calc(var(--spacing) * 6);
 		}
 	}
 
 	blockquote {
-		@apply ml-12 leading-[1.2] text-balance text-accent mb-6;
+		margin-left: calc(var(--spacing) * 12);
+		margin-bottom: calc(var(--spacing) * 6);
+		line-height: 1.2;
+		text-wrap: balance;
+		color: var(--color-accent);
 		font-size: clamp(1.25rem, 1rem + 1.25vw, 2rem);
 	}
 
 	table {
-		@apply w-full mb-4 align-top bg-white border border-current/20;
+		width: 100%;
+		margin-bottom: calc(var(--spacing) * 4);
+		vertical-align: top;
+		background: white;
+		border: 1px solid color-mix(in oklab, currentcolor 20%, transparent);
 
 		> :not(caption) > * > * {
-			@apply px-2.5 py-2.5 border-b border-current;
+			padding: calc(var(--spacing) * 2.5);
+			border-bottom: 1px solid currentcolor;
 		}
 
 		> tbody {
-			@apply align-baseline;
+			vertical-align: baseline;
 		}
 
 		> thead {
-			@apply align-bottom;
+			vertical-align: bottom;
 		}
 
 		.caption-top {
-			@apply caption-top;
+			caption-side: top;
 		}
 
 		&.table-striped > tbody > tr:nth-of-type(odd) > * {
-			@apply bg-neutral-100;
+			background: var(--color-light);
 		}
 
 		&.table-striped-columns > :not(caption) > tr > :nth-child(even) {
-			@apply bg-neutral-100;
+			background: var(--color-light);
 		}
 	}
 }
-
-} /* end @layer components */

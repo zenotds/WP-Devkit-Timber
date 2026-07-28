@@ -1,5 +1,5 @@
 {% macro nav_item(item) %}
-    <div class="nav-item {% if item.current or 'current-menu-ancestor' in item.class or 'current-menu-parent' in item.class %}active{% endif %} {{ item.class }} flex border-b border-black/15 hover:text-accent p-4 min-h-10 gap-4" role="none">
+    <div class="nav-item {% if item.current or 'current-menu-ancestor' in item.class or 'current-menu-parent' in item.class %}active{% endif %} {{ item.class }} flex border-b border-black/15 p-4 min-h-10 gap-4" role="none">
         <a class="nav-link font-base relative flex w-full self-center py-2 leading-none font-semibold whitespace-normal" href="{{ item.url }}" target="{{ item.target }}" role="menuitem" {% if item.current %}aria-current="page"{% endif %}>
             {{ item.name }}
         </a>
@@ -89,7 +89,7 @@
 
             {# Social (ACF options repeater: social, icon, link) #}
             {% if settings.company_social %}
-                <div class="mobile-social flex items-center gap-4 p-4 bg-neutral-100">
+                <div class="mobile-social flex items-center gap-4 p-4 bg-light">
                     <span class="font-semibold">{{ __('Seguici', 'theme') }}</span>
                     <div class="social-links flex items-center gap-2 ms-auto" role="group" aria-label="{{ __('Seguici', 'theme') }}">
                         {% for social in settings.company_social %}

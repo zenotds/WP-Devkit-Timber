@@ -1,12 +1,12 @@
 ## Team
 
-Bizen Srl
-https://www.bizen.it
+Studio / agenzia
+https://example.com
 
 
 ## Site
 
-Software: Built with [Timber](https://upstatement.com/timber/)
-Coded by: Francesco Selva
-CMS: Wordpress
-Tools: esbuild, tailwind, vlitejs, swiperjs, venobox
+Software: Built with [Timber](https://timber.github.io/docs/)
+Coded by: Nome Cognome
+CMS: WordPress
+Tools: esbuild, tailwind, alpine, gsap, swiperjs, vlitejs, venobox

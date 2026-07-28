@@ -1,19 +1,54 @@
 .main-menu {
 	.nav-item {
-		@apply flex items-stretch;
+		display: flex;
+		align-items: stretch;
+
+		/* Underline animata: definita qui e non con le utility after:* nel twig, così
+		   lo stato attivo (stesso layer) può sovrascriverla — dalle utility non potrebbe */
+		.nav-link::after {
+			content: "";
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			height: calc(var(--spacing) * 1);
+			width: 100%;
+			background: var(--color-accent);
+			transform: scaleY(0);
+			transform-origin: bottom;
+			transition: transform 0.15s linear;
+		}
 
 		/* CTA buttons */
 		&.cta {
-			@apply h-auto self-center;
+			height: auto;
+			align-self: center;
 
 			.nav-link {
-				@apply after:hidden py-2 px-4 rounded-md bg-sky-50 border border-slate-500/20 hover:bg-slate-500 hover:text-white;
+				padding-block: calc(var(--spacing) * 2);
+				padding-inline: calc(var(--spacing) * 4);
+				border: 1px solid color-mix(in oklab, var(--color-dark) 20%, transparent);
+				border-radius: var(--radius-md);
+				background: var(--color-light);
+
+				&::after {
+					display: none;
+				}
+
+				&:hover {
+					background: var(--color-dark);
+					color: white;
+				}
 			}
 		}
 
 		&.cta-accent {
 			.nav-link {
-				@apply bg-accent text-white hover:bg-slate-500;
+				background: var(--color-accent);
+				color: white;
+
+				&:hover {
+					background: var(--color-dark);
+				}
 			}
 		}
 
@@ -23,7 +58,11 @@
 		&:focus-within {
 			&:not(.cta) {
 				.nav-link {
-					@apply text-accent after:scale-y-100;
+					color: var(--color-accent);
+
+					&::after {
+						transform: scaleY(1);
+					}
 				}
 			}
 		}

@@ -4,7 +4,7 @@ Ogni cartella è un blocco autonomo e copia-incollabile tra progetti:
 
 ```
 blocks/<slug>/
-├── block.json    # registrazione (apiVersion 3, render via bizen_block_render)
+├── block.json    # registrazione (apiVersion 3, render via theme_block_render)
 ├── <slug>.twig   # template Timber del blocco
 ├── fields.json   # field group ACF (salvato qui automaticamente)
 ├── style.css     # CSS per-blocco: frontend + iframe editor (opzionale)
@@ -33,7 +33,7 @@ Oppure a mano:
 
 1. Duplica `blocks/section` → `blocks/<slug>`
 2. Rinomina `section.twig` → `<slug>.twig`; in `block.json` aggiorna `name`
-   (`bizen/<slug>`), `title`, `icon`, `keywords`
+   (`<namespace>/<slug>`), `title`, `icon`, `keywords`
 3. **Elimina `fields.json`** dalla copia (le chiavi ACF duplicate confliggono),
    poi crea il field group da admin ACF con location `Blocco == <Titolo>`:
    ACF lo salva da solo nella cartella del blocco

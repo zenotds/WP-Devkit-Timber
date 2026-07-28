@@ -1,337 +1,319 @@
 # Zeno's WP DevKit | Timber Edition
 
-A modern, opinionated WordPress theme development kit built on Timber, featuring Tailwind CSS 4.x, esbuild, and a curated set of tools for efficient theme development.
+Base di sviluppo per temi WordPress costruita su Timber 2, Tailwind CSS 4 ed esbuild.
+Opinionata: fa poche scelte, ma le fa in modo esplicito e le documenta.
 
-## ✨ Features
+## ✨ Caratteristiche
 
-- 🌲 **Timber 2.x** - Component-based theme development with Twig templating
-- 🎨 **Tailwind CSS 4.x** - Modern utility-first CSS with the latest features
-- ⚡ **esbuild** - Lightning-fast build system with hot reload
-- 🧱 **ACF Gutenberg Blocks** - Block boilerplate (API v3) rendered with Timber
-- 🖼️ **TimberAVIF** - On-demand AVIF/WebP conversion with background queue
-- 📦 **Modular Scripts** - Tree-shakeable ES6 modules for common UI patterns
-- 🔧 **WordPress Best Practices** - Proper enqueue system and cache management
+- 🌲 **Timber 2.x** — template Twig, logica PHP separata dalla vista
+- 🎨 **Tailwind CSS 4.x** — config CSS-first via `@theme`, token funzionali, cascata a layer espliciti
+- ⚡ **esbuild** — rebuild incrementali, CSS iniettato senza ricaricare la pagina
+- 🧩 **Libreria moduli** — 16 moduli ACF flexible content: 2 attivi, 14 in dispensa da cui copiare
+- 🧱 **Blocchi Gutenberg ACF** — boilerplate opzionale (API v3) renderizzato da Timber
+- 🖼️ **TimberAVIF** — conversione AVIF/WebP on demand con coda in background
+- 📦 **Script modulari** — moduli ES6 tree-shakeable per i pattern UI ricorrenti
 
-## 🚀 Quick Start
+## 🚀 Avvio rapido
 
-### Prerequisites
+### Prerequisiti
 
-- Node.js 18+ and npm
-- PHP 8.0+
-- Composer
-- WordPress 6.0+
+Node.js 22+, PHP 8.3+, Composer, WordPress 7.0+
 
-### Installation
+### Installazione
 
-1. **Install Dependencies**
+1. **Dipendenze**
    ```bash
    npm install
    composer install
    ```
 
-2. **Configure Development URL**
+2. **URL di sviluppo**
 
-   Edit the build config block at the top of `esbuild.js` and set your local development domain (and browser, if needed):
-   ```javascript
-   const PROXY_URL = "https://your-site.test";
+   `devkit.config.json` è l'unico file di build da toccare per progetto. `esbuild.js` resta
+   invariato, così si aggiorna dal devkit senza conflitti:
+   ```json
+   {
+     "proxy": "https://tuo-sito.test",
+     "browser": ["default"]
+   }
    ```
 
-3. **Start Development**
-   ```bash
-   npm run dev
-   ```
+3. **Sviluppo** — `npm run dev`
+4. **Produzione** — `npm run build`
 
-4. **Build for Production**
-   ```bash
-   npm run build
-   ```
+### Comandi
 
-### Available Commands
+| Comando | Alias | Cosa fa |
+|---|---|---|
+| `npm run dev` | `watch` | Watch + BrowserSync, rebuild incrementale |
+| `npm run build` | `prod` | Build minificata + bump di versione in `style.css` |
+| `npm run make:module -- <slug> "<Titolo>"` | | Scaffold di un modulo flexible |
+| `npm run make:block -- <slug> "<Titolo>"` | | Scaffold di un blocco Gutenberg |
 
-| Command | Alias | Description |
-|---------|-------|-------------|
-| `npm run dev` | `watch` | Watch for changes and rebuild assets with hot reload |
-| `npm run build` | `prod` | Build optimized assets for production |
-
-## 📁 Project Structure
-
-### Theme Organization
+## 📁 Struttura
 
 ```
-your-theme/
-├── assets/               # Compiled files (auto-generated)
-│   ├── css/              # Compiled stylesheets
-│   └── js/               # Compiled scripts
-├── blocks/               # ACF Gutenberg blocks (one folder per block)
-│   └── section/          # Demo block: block.json + twig + fields.json
-├── dev/                  # Source files
-│   ├── css/              # Source stylesheets (Tailwind)
-│   ├── js/               # Source scripts (ES6 modules)
-│   └── make-block.mjs    # Block scaffolding script
-├── functions/            # Theme logic (renamed from "src")
-│   ├── acf.php           # Advanced Custom Fields setup
-│   ├── avif.php          # TimberAVIF: AVIF/WebP conversion
-│   ├── blocks.php        # Gutenberg / ACF blocks setup
-│   ├── custom.php        # Other stuff
-│   ├── enqueue.php       # Script and style enqueueing
-│   ├── forms.php         # Form handling utilities
-│   ├── menus.php         # Navigation menu configuration
-│   ├── setup.php         # Timber Starter and settings
-│   └── twig.php          # Twig extensions and filters
-└── templates/            # Twig templates (renamed from "views")
+tuo-tema/
+├── acf-json/             # Field group, CPT e tassonomie versionati
+├── assets/               # Output compilato (non editare a mano)
+├── blocks/               # Blocchi Gutenberg ACF, uno per cartella (opzionale)
+├── dev/
+│   ├── css/              # Sorgenti CSS (Tailwind)
+│   ├── js/               # Sorgenti JS (moduli ES6)
+│   ├── make-block.mjs    # Scaffolder blocchi
+│   └── make-module.mjs   # Scaffolder moduli flexible
+├── functions/            # Logica PHP, un file per responsabilità
+│   ├── acf.php           # Setup e personalizzazioni ACF
+│   ├── avif.php          # TimberAVIF: conversione AVIF/WebP
+│   ├── blocks.php        # Blocchi Gutenberg / ACF
+│   ├── config.php        # Scelte per progetto (namespace, flag Gutenberg)
+│   ├── custom.php        # Varie
+│   ├── enqueue.php       # Enqueue di script e stili
+│   ├── forms.php         # Utility per i form
+│   ├── menus.php         # Registrazione menu
+│   ├── setup.php         # Timber Starter e contesto globale
+│   └── twig.php          # Filtri e funzioni Twig
+├── library/              # Dispensa: moduli pronti ma inerti finché non li copi
+├── templates/            # Template Twig
+├── devkit.config.json    # Config di build per progetto
+└── START.md              # Checklist nuovo progetto (da eliminare a setup finito)
 ```
 
-### Key Changes from Timber Starter Theme
+Rispetto allo starter theme di Timber: `views/` → `templates/`, `src/` → `functions/`,
+partial PHP modulari e `base.twig` a blocchi. Tutti i partial sono opzionali.
 
-- `views/` → `templates/` - More intuitive naming for Twig files
-- `src/` → `functions/` - Clearer separation of PHP logic
-- Modular function partials for better code organization
-- All partials are optional - use what you need
-- Some templates have been removed and base.twig has a more modular structure
+## 🎯 Stack
 
-## 🎯 Technology Stack
+**Core** — [Timber](https://timber.github.io/docs/) ^2.0, [Tailwind CSS](https://tailwindcss.com/) ^4.x,
+[esbuild](https://esbuild.github.io/), [PostCSS](https://postcss.org/)
 
-### Core Technologies
+**Librerie incluse** — elenco completo in `package.json`:
+[Alpine.js](https://alpinejs.dev/) (stato UI),
+[GSAP](https://greensock.com/gsap/) (animazioni),
+[Swiper](https://swiperjs.com/) (caroselli),
+[vLitejs](https://vlite.js.org/) (video MP4/YouTube/Vimeo),
+[VenoBox](https://veno.es/venobox/) (lightbox),
+[CountUp.js](https://inorganik.github.io/countUp.js/) (contatori),
+[Lenis](https://lenis.darkroom.engineering/) (smooth scroll).
 
-- **[Timber](https://timber.github.io/docs/)** ^2.0 - MVC-style theme development
-- **[Tailwind CSS](https://tailwindcss.com/)** ^4.x - Utility-first CSS framework
-- **[PostCSS](https://postcss.org/)** - CSS transformation with plugins
-- **[esbuild](https://esbuild.github.io/)** - Ultra-fast JavaScript bundler
+`dev/js/custom/custom.js` aggiunge utility opt-in — Autohide, HoverIntent, SmoothScroll,
+Sticky — da importare solo se servono.
 
-### Included Libraries
+## 📝 Gestione contenuti
 
-Check `package.json` for the complete list. Notable inclusions:
-
-- **[Alpine.js](https://alpinejs.dev/)** - Lightweight JavaScript framework
-- **[GSAP](https://greensock.com/gsap/)** - Professional-grade animation
-- **[Swiper](https://swiperjs.com/)** - Modern touch slider
-- **[vLitejs](https://vlite.js.org/)** - Lightweight video player (MP4, YouTube, Vimeo)
-- **[VenoBox](https://veno.es/venobox/)** - Lightbox for images and videos
-- **[CountUp.js](https://inorganik.github.io/countUp.js/)** - Animated counters
-- **[Lenis](https://lenis.darkroom.engineering/)** - Smooth scroll engine
-- **Custom Utilities** - Autohide, HoverIntent, SmoothScroll, Sticky
-
-### Custom JavaScript Modules
-
-Import only what you need:
-
-```javascript
-import { Autohide, HoverIntent, SmoothScroll, Sticky } from './custom/custom.js';
-
-// Initialize on DOM ready
-document.addEventListener('DOMContentLoaded', () => {
-  Autohide('.header', 80);
-  SmoothScroll();
-  Sticky('.sidebar');
-  
-  new HoverIntent(document.querySelectorAll('.dropdown'), {
-    onEnter: (el) => el.classList.add('open'),
-    onExit: (el) => el.classList.remove('open')
-  });
-});
-```
-
-## 📝 Content Management
-
-Two interchangeable content systems ship as boilerplate — pick one per project
-(or mix them, enabling Gutenberg only on specific posts):
+Due sistemi intercambiabili: si sceglie a inizio progetto, e possono convivere abilitando
+Gutenberg solo su post specifici.
 
 ### ACF Flexible Content (default)
 
-A "Contenuti" flexible content group renders each layout dynamically:
+Un gruppo flexible "Contenuti" renderizza ogni layout dinamicamente:
 
 ```twig
 {% for content in post.meta('content') %}
-    {% include "components/block-" ~ content.acf_fc_layout ~ ".twig" ignore missing %}
+    {% include "components/block-" ~ content.acf_fc_layout ~ ".twig" %}
 {% endfor %}
 ```
 
-See `templates/partial/page-content.twig` and `templates/components/`.
+Niente `ignore missing`: un layout senza twig deve fallire rumorosamente invece di sparire
+dalla pagina in silenzio. Vedi `templates/partial/page-content.twig` e `templates/components/`.
 
-### ACF Gutenberg Blocks (API v3)
+Due moduli universali sono attivi (**free** e **media**). Gli altri quattordici — columns,
+panel, cards, icons, numbers, accordion, faq, cta, form, contacts, separator, shortcode,
+code, posts — stanno inerti in `library/modules/` e si **installano copiandoli dentro** quando
+servono. Da un progetto non si toglie mai niente: si aggiunge. Procedura in
+[`library/README.md`](library/README.md).
 
-Visual editing with ACF blocks rendered by Timber. Each block is a
-self-contained folder in `/blocks/` (block.json + twig + fields.json + css),
-auto-discovered and registered by `functions/blocks.php`.
+### Blocchi Gutenberg ACF (API v3)
 
-```bash
-# Scaffold a new block from the demo
-npm run make:block -- hero "Hero"
-```
-
-Enable in `functions/blocks.php`:
+Editing visuale con blocchi ACF renderizzati da Timber. Ogni blocco è una cartella autonoma
+in `/blocks/` (block.json + twig + fields.json + css), scoperta e registrata da
+`functions/blocks.php`. Si abilita in `functions/config.php`:
 
 ```php
 define('GUTENBERG_ENABLED', true);
 define('GUTENBERG_CUSTOM_BLOCKS_ENABLED', true);
 ```
 
-Full docs in [`blocks/README.md`](blocks/README.md): per-block ACF JSON
-save/load, inserter previews, InnerBlocks, iframe editor styles.
+Documentazione completa in [`blocks/README.md`](blocks/README.md): salvataggio ACF JSON
+per blocco, preview nell'inserter, InnerBlocks, editor styles.
 
-## 🖼️ Image Optimization (TimberAVIF)
+## 🖼️ Immagini (TimberAVIF)
 
-`functions/avif.php` converts images to AVIF/WebP on demand with a per-request
-budget and a background queue for the overflow. Twig filters:
+`functions/avif.php` converte in AVIF/WebP on demand, con un budget per richiesta e una coda
+in background per l'eccedenza. Filtri Twig:
 
 ```twig
-{{ image|toavif }}              {# AVIF or original #}
+{{ image|toavif }}              {# AVIF o originale #}
 {{ image|avif_src(800, 600) }}  {# resize + AVIF #}
-{{ image|best_src(800, 600) }}  {# AVIF > WebP > original #}
+{{ image|best_src(800, 600) }}  {# AVIF > WebP > originale #}
 ```
 
-The `image()` macro in `templates/partial/macros.twig` builds responsive
-`<picture>` elements (AVIF > WebP fallback, srcset breakpoints, 2x density,
-lazy loading, `atf` option for above-the-fold priority). Companion macros
-`mp4()` and `embed()` output vLitejs-ready video markup.
+La macro `image()` in `templates/partial/macros.twig` costruisce `<picture>` responsive
+(AVIF con fallback WebP, srcset, densità 2x, lazy loading, opzione `atf` per l'above-the-fold).
+Le macro `mp4()` ed `embed()` producono il markup video per vLitejs.
 
-## 🌐 Request Object
+## 🌐 Oggetto request
 
-A sanitized request object is available in every Twig template:
+In ogni template Twig è disponibile una request sanitizzata:
 
 ```twig
 {{ request.get.page }}    {# $_GET, unslashed + sanitized #}
 {{ request.post.email }}  {# $_POST, unslashed + sanitized #}
 ```
 
-## 🔌 Recommended WordPress Plugins
+## 🔌 Plugin consigliati
 
-These plugins integrate seamlessly with the theme's custom functions:
+| Plugin | Scopo | Necessario |
+|---|---|---|
+| **[ACF Pro](https://www.advancedcustomfields.com/)** | Campi custom e flexible content | Fortemente consigliato |
+| **[Yoast SEO](https://yoast.com/)** | SEO e breadcrumb | Consigliato |
+| **[Contact Form 7](https://contactform7.com/)** | Form | Opzionale |
+| **[WPML](https://wpml.org/)** | Multilingua | Opzionale |
+| **[WP Rocket](https://wp-rocket.me/)** | Cache e ottimizzazione | Opzionale |
 
-| Plugin | Purpose | Required |
-|--------|---------|----------|
-| **[ACF Pro](https://www.advancedcustomfields.com/)** | Custom fields and flexible content | Highly Recommended |
-| **[Yoast SEO](https://yoast.com/)** | Search engine optimization | Recommended |
-| **[WPML](https://wpml.org/)** | Multilingual site support | Optional |
-| **[WP Rocket](https://wp-rocket.me/)** | Advanced caching and optimization | Optional |
-| **[Contact Form 7](https://contactform7.com/)** | Form builder and management | Optional |
+## 🛠️ Build
 
-## 🛠️ Build System
+- **CSS**: Tailwind 4 via PostCSS. Niente `postcss-import` né autoprefixer — Tailwind risolve
+  gli import e gestisce prefissi e nesting da sé con Lightning CSS
+- **JS**: bundling ES6+ con esbuild
+- **Font e immagini** non vengono processati: si referenziano relativi ad `/assets/`
 
-### Asset Processing
+Per convenzione ogni `.js` e ogni `.css` top-level in `dev/` diventa un bundle in
+`assets/{js,css}/<nome>.min.*`. Un file in più = un bundle in più.
 
-- **CSS**: Tailwind CSS compilation with PostCSS
-- **JavaScript**: ES6+ transpilation and bundling with esbuild
-- **Static Assets**: Fonts and images are not processed - reference them relative to `/assets/`
+**Caratteristiche:**
 
-### Build Features
+- **Rebuild incrementali** — il context esbuild è riusato tra le build e si ricrea solo quando
+  cambia l'elenco degli entrypoint
+- **CSS iniettato senza reload** — modificare un foglio di stile non fa perdere lo stato della
+  pagina: menu aperti, modali, posizione di scroll. Twig, PHP e JS fanno reload pieno
+- **Sourcemap solo in sviluppo** — in produzione esporrebbero i sorgenti
+- **Versioning automatico** in `style.css` e cache busting via enqueue WordPress
 
-- **Hot Module Replacement** - Instant updates during development
-- **Error Handling** - Robust error catching and reporting
-- **Debouncing** - Prevents unnecessary rebuilds
-- **Version Tagging** - Automatic versioning in output files
-- **Cache Busting** - WordPress enqueue system with version hashes
+## 🎨 Convenzioni CSS
 
-### Important Notes
+Tailwind 4 con `@import`, `@theme` e `@utility` — niente `tailwind.config.js`.
 
-- ⚠️ **Avoid images in CSS** - Use `<img>` tags or background images via HTML/Twig for better performance
-- 📁 **Static fonts** - Place fonts in `/assets/webfonts/` and reference them directly in CSS
-- 🎯 **ES Modules** - All JavaScript uses modern module syntax with tree-shaking
-- 🎯 **Tailwind utilities** - Theme compiles without custom class errors out of the box
-
-## 🎨 Styling Guidelines
-
-This theme uses Tailwind CSS 4.x with the new `@import`, `@theme`, and `@utility` syntax:
+**Token funzionali, mai nomi colore.** La palette prende il nome dal ruolo, così lo stesso
+foglio di stile funziona su ogni progetto cambiando sette valori:
 
 ```css
-/* dev/css/main.css */
-@import "tailwindcss";
-
+/* dev/css/styles.css */
 @theme {
-  --color-primary: #3b82f6;
-  --font-sans: 'Inter', system-ui, sans-serif;
-}
-
-@utility custom-shadow {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --color-accent: #609422;  /* brand */
+  --color-light:  #f2f1f0;  /* bande chiare (data-bg="light") */
+  --color-dark:   #22262a;  /* bande scure, testi forti */
+  --color-darker: #121417;  /* footer, overlay */
+  --color-body:   #64748b;  /* testo corrente */
+  --color-error:  #dc2626;  /* validazione form */
+  --color-focus:  #1d4ed8;  /* anello di focus, visibile su ogni sfondo */
 }
 ```
 
-Includes a Biome config to handle Tailwind 4.0 syntax.
+Nessun `slate-*` / `neutral-*` / `sky-*` nel codice.
+
+**Niente `@apply`.** Nei file CSS si scrive CSS, usando i token come custom property:
+
+```css
+.btn {
+  padding-inline: calc(var(--spacing) * 4);
+  border-radius: var(--radius-md);
+  background: var(--color-light);
+  font-size: var(--text-sm);
+}
+```
+
+Le utility stanno nei template, non dentro il CSS.
+
+**Cascata a layer espliciti**, dichiarati sugli import:
+`base` → `components` (CSS del tema e dei plugin) → `utilities` (Tailwind) → `overrides`.
+
+Conseguenza pratica: **una utility in un template batte sempre il CSS di componente**.
+In `overrides` va solo ciò che deve vincere per forza — oggi il solo `layout/section-bg.css`,
+la cui inversione testi su `data-bg="dark"` deve battere un `text-accent` scritto nel markup.
+
+Corollario: lo stile base di un componente e i suoi stati vanno nello *stesso* file. Se lo stato
+sta nel CSS (`.nav-item.active`) mentre la base sta nelle utility del template
+(`after:scale-y-0`), lo stato perde in silenzio.
+
+Incluso un config Biome che gestisce la sintassi Tailwind 4.
 
 ## 📝 Changelog
 
-### v6.0 - Blocks & Lessons Learned (Current)
+### v7.5 — Build e igiene CSS (corrente)
 
-Brings the lessons learned from production themes back into the devkit.
+Affila le due cose che ogni progetto tocca ogni giorno: il ciclo di build e i fogli di stile.
 
-**Breaking Changes**
-- Removed `laminas-diactoros`: `{{ request }}` is now a plain sanitized object
-  (`request.get.*` / `request.post.*`)
-- Removed Vidstack in favor of **vLitejs** (MP4 + YouTube/Vimeo providers,
-  volume/mobile plugins)
-- Twig filters: `iframesrc` renamed to `video_src`; removed `fvb` and `sbt`
+**Build**
+- ⚡ Rebuild su `esbuild.context()` riusato — CSS 249→60 ms, JS 44→15 ms, build di produzione
+  completa 0.75→0.35 s
+- 💧 I cambi CSS sono **iniettati senza ricaricare**: menu aperti, modali e posizione di scroll
+  sopravvivono a una modifica
+- 📄 Config di build per progetto spostata in `devkit.config.json`; `esbuild.js` è ora identico
+  tra devkit e progetti e si aggiorna senza conflitti
+- 🧹 Via autoprefixer (Tailwind 4 prefissa con Lightning CSS) — 5 KB di prefissi morti in meno
+- 🔒 Sourcemap solo in sviluppo e non più committati; lockfile npm/composer ora sì
 
-**New Features**
-- 🧱 **ACF Gutenberg blocks boilerplate** (API v3): auto-discovery from
-  `/blocks/`, generic Timber render callback, per-block ACF JSON, inserter
-  previews, InnerBlocks support, `make:block` scaffolding script, demo block
-- 🖼️ **TimberAVIF**: on-demand AVIF/WebP conversion with background queue,
-  admin tools and WP-CLI support
-- 🖼️ Responsive `image()` macro (picture, AVIF > WebP, srcset, 2x) plus
-  `mp4()` / `embed()` video macros
-- ➕ New libraries: VenoBox (lightbox), CountUp.js (animated counters),
-  `@alpinejs/focus`
-- 🎨 Block editor iframe gets the theme CSS via `add_editor_style`
+**CSS**
+- 🎨 Tre token funzionali nuovi: `--color-body`, `--color-error`, `--color-focus`
+- ✂️ **Rimossi tutti i 93 `@apply`** — i fogli di stile sono CSS puro coi token come custom property
+- 🧯 **Rimosse tutte le 37 classi della palette di default** (`slate-*`, `neutral-*`, `sky-*`…)
+- 🧱 Layer di cascata espliciti (`base` → `components` → `utilities` → `overrides`): le utility nei
+  template battono in modo affidabile il CSS di componente, e l'inversione `data-bg` vince dove deve
+- ♿ L'anello di focus è un vero `outline` con offset invece di un ring box-shadow
+- 📉 CSS compilato 109,3 → 100,4 KB (18,1 KB gzip)
 
-**Improvements**
-- All Composer and npm dependencies updated (Timber 2.5, Tailwind 4.3,
-  esbuild 0.28, chokidar 5)
-- Optimized `video_*` Twig filters: shared URL extraction (iframe or raw URL),
-  wider YouTube/Vimeo pattern support (shorts, youtu.be, player.vimeo)
-- `svg` filter: local URL → path resolution and per-request cache
-- Leaner comments across JS/CSS sources
+### v7.0 — Moduli flexible e seam di progetto
 
-### v5.0 - Modern Architecture
+Trasforma il boilerplate in una base che avvia un progetto invece di una che va riscritta.
 
-**Breaking Changes**
-- Removed Bootstrap completely (so long, and thanks for all the fish! 🐬)
-- Removed situational dependencies: smooth-scroll, tippy, vanillasharing
-- Aligned version numbering with non-timber devkit
+**Novità**
+- 🧩 **Sistema di moduli flexible content**: `free` e `media` attivi, altri quattordici in
+  `library/modules/`, installati copiandoli dentro
+- 📐 **Contratto modulo**: opzioni standard `bg` / `section_id`, campi intro condivisi, ritmo
+  verticale governato da `.main > *` così i twig dei moduli non portano spaziatura verticale
+- 🌗 Sfondi di sezione `data-bg` con inversione automatica dei testi sulle bande scure, più
+  l'opt-out `.surface` per le card che mantengono la propria superficie chiara
+- 🎛️ **Seam per progetto**: `functions/config.php` centralizza namespace del tema e flag
+  Gutenberg, con supporto ai setup misti (blocchi su alcune pagine, flexible sulle altre)
+- 🏗️ Scaffolder `make:module` accanto a `make:block`
 
-**New Features**
-- ✨ Custom scripts refactored as ES6 modules with comprehensive documentation
-- ⚡ Enhanced esbuild configuration with error handling and debouncing
-- 🎯 WordPress enqueue system for better versioning and cache management
-- 🧹 Biome integration with Tailwind v4 compatibility
-- 📊 Build outputs version and date on separate lines for better caching
+**Migliorie**
+- Token colore funzionali e scala tipografica fluida in `@theme`
+- Reveal per singolo elemento, con skip dei blocchi above-the-fold (niente flash al reload)
+- Bundle caricato una volta sola, solo da `functions/enqueue.php`
 
-**Improvements**
-- Streamlined installation experience
-- Removed unused devDependencies
-- Build outputs version and date on separate lines
-- Various under-the-hood optimizations
+### v6.0 — Blocchi
 
-### v1.1 - Alpine Era
+- 🧱 Boilerplate blocchi Gutenberg ACF (API v3): auto-discovery da `/blocks/`, render callback
+  Timber generico, ACF JSON per blocco, preview nell'inserter, InnerBlocks, `make:block`
+- 🖼️ TimberAVIF con coda in background, strumenti admin e supporto WP-CLI
+- 🖼️ Macro `image()` responsive più le macro video `mp4()` / `embed()`
+- ➕ VenoBox, CountUp.js, `@alpinejs/focus`
 
-- Fixed missing index.php
-- Replaced Bootstrap with Alpine.js
-- Upgraded to Vidstack player
-- Replaced modals with Fancybox
-- Better starter theme with Alpine-powered menus
-- Auto-generates wp-config.php shortcut
+**Breaking** — rimosso `laminas-diactoros` (`{{ request }}` è ora un oggetto sanitizzato
+semplice), Vidstack sostituito da vLitejs, filtro `iframesrc` rinominato in `video_src`.
 
-### v1.0 - Initial Release
+### v5.0 — Architettura moderna
 
-First public version
+- Rimosso Bootstrap e le dipendenze situazionali
+- Script custom rifatti come moduli ES6
+- Config esbuild con gestione errori e debouncing
+- Enqueue WordPress per versioning e cache
 
-## 🤝 Contributing
+**Breaking** — rimozione di Bootstrap.
 
-This is a personal development kit, but suggestions and improvements are welcome! Feel free to fork and adapt to your needs.
+### v1.x — Prime versioni
 
-## 📄 License
+Prima release pubblica, poi passaggio da Bootstrap ad Alpine.js e menu Alpine-powered.
 
-This project is provided as-is for theme development. Individual dependencies maintain their own licenses.
+## 📄 Licenza
 
-## 🙏 Credits
+Fornito così com'è per lo sviluppo di temi. Le singole dipendenze mantengono la propria licenza.
 
-Built with ❤️ by [@zenotds](https://github.com/zenotds)
+## 🙏 Crediti
 
-Special thanks to:
-- [Timber](https://timber.github.io/) team
-- [Tailwind CSS](https://tailwindcss.com/) team
-- All the amazing open-source contributors
+Realizzato da [@zenotds](https://github.com/zenotds).
 
----
-
-**Happy theming!** 🎉
+Grazie ai team di [Timber](https://timber.github.io/) e [Tailwind CSS](https://tailwindcss.com/),
+e a tutti i contributori open source.

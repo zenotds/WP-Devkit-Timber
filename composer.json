@@ -1,6 +1,6 @@
 {
 	"name": "zenotds/wp_composer",
-	"version": "7.0",
+	"version": "7.5",
 	"description": "Composer for WP Devkit",
 	"type": "wordpress-theme",
 	"license": "MIT",

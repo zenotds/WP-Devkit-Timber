@@ -13,7 +13,7 @@
                 @keydown.escape.stop="open = false; $refs.toggle.focus()"
                 @focusout="if ($event.relatedTarget && !$el.contains($event.relatedTarget)) { open = false }">
 
-                <a class="nav-link relative flex h-full items-center whitespace-nowrap after:absolute after:bottom-0 after:left-0 after:h-1 after:w-full after:origin-bottom after:scale-y-0 after:bg-accent after:transition-transform"
+                <a class="nav-link relative flex h-full items-center whitespace-nowrap"
                     href="{{ item.url }}" target="{{ item.target }}"
                     role="menuitem" {% if item.current %}aria-current="page"{% endif %}>
                     {{ item.name }}
@@ -32,7 +32,7 @@
                 {% if is_mega %}
 
                     <div id="submenu-{{ item.id }}"
-                        class="mega-menu absolute left-0 right-0 top-full z-20 m-0 border-t border-black/10 bg-neutral-100 text-neutral-900 shadow-lg"
+                        class="mega-menu absolute left-0 right-0 top-full z-20 m-0 border-t border-black/10 bg-light text-dark shadow-lg"
                         role="menu" aria-label="{{ item.name }}"
                         x-show="open" x-cloak
                         x-transition:enter="transition ease-out duration-150"
@@ -50,7 +50,7 @@
 
                                         <div class="mega-col flex flex-col gap-3">
 
-                                            <a class="mega-col-title text-sm xl:text-[15px] 2xl:text-lg font-medium text-neutral-900/70 hover:text-accent" href="{{ child.url }}" target="{{ child.target }}" role="menuitem">
+                                            <a class="mega-col-title text-sm xl:text-[15px] 2xl:text-lg font-medium text-dark/70 hover:text-accent" href="{{ child.url }}" target="{{ child.target }}" role="menuitem">
                                                 {{ child.name }}
                                             </a>
 
@@ -80,7 +80,7 @@
                 {% else %}
 
                     <div id="submenu-{{ item.id }}"
-                        class="dropdown-menu absolute top-full {% if loop.last %}right-0{% else %}left-0{% endif %} z-20 m-0 flex w-60 flex-col border border-black/10 bg-white text-neutral-900 shadow-lg"
+                        class="dropdown-menu absolute top-full {% if loop.last %}right-0{% else %}left-0{% endif %} z-20 m-0 flex w-60 flex-col border border-black/10 bg-white text-dark shadow-lg"
                             role="menu" aria-label="{{ item.name }}"
                             x-show="open" x-cloak
                             x-transition:enter="transition ease-out duration-150"
@@ -136,7 +136,7 @@
         {% else %}
 
             <div class="nav-item {{ item.menu_type|default('default') }} {{ item.class }} {% if item.current %}active{% endif %} relative" role="none">
-                <a class="nav-link relative flex h-full items-center whitespace-nowrap after:absolute after:bottom-0 after:left-0 after:h-1 after:w-full after:origin-bottom after:scale-y-0 after:bg-accent after:transition-transform"
+                <a class="nav-link relative flex h-full items-center whitespace-nowrap"
                     href="{{ item.url }}" target="{{ item.target }}"
                     role="menuitem" {% if item.current %}aria-current="page"{% endif %}>
                     {{ item.name }}

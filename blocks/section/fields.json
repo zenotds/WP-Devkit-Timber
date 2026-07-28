@@ -84,7 +84,7 @@
 			{
 				"param": "block",
 				"operator": "==",
-				"value": "bizen/section"
+				"value": "theme/section"
 			}
 		]
 	],

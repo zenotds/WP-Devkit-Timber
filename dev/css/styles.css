@@ -1,14 +1,19 @@
 /* Tailwind */
 @import "tailwindcss";
 
+/* Cascata: `overrides` è l'ultimo layer, batte anche le utility. Ci va solo ciò che
+   deve vincere per forza (l'inversione testi di data-bg). Tutto il resto sta in
+   `components`, così le utility nei twig possono sovrascriverlo. */
+@layer overrides;
+
 /* Lenis */
-@import "./plugins/lenis";
+@import "./plugins/lenis" layer(components);
 
 /* Base */
-@import "./base/base";
+@import "./base/base" layer(base);
 @import "./base/fonts";
-@import "./base/typography";
-@import "./base/custom";
+@import "./base/typography" layer(components);
+@import "./base/custom" layer(components);
 
 /* FontAwesome Pro — aggiunta manuale per progetto:
    copia i CSS in dev/css/fontawesome/ e i woff2 in assets/webfonts/, poi scommenta */
@@ -17,34 +22,34 @@
 /* @import "./fontawesome/brands"; */
 
 /* SwiperJS */
-@import "../../node_modules/swiper/swiper";
-@import "../../node_modules/swiper/modules/pagination";
-@import "../../node_modules/swiper/modules/navigation";
-@import "../../node_modules/swiper/modules/effect-fade";
-@import "./plugins/swiper";
+@import "../../node_modules/swiper/swiper" layer(components);
+@import "../../node_modules/swiper/modules/pagination" layer(components);
+@import "../../node_modules/swiper/modules/navigation" layer(components);
+@import "../../node_modules/swiper/modules/effect-fade" layer(components);
+@import "./plugins/swiper" layer(components);
 
 /* vLitejs player */
-@import "../../node_modules/vlitejs/dist/vlite.css";
-@import "../../node_modules/vlitejs/dist/plugins/volume-bar.css";
-@import "./plugins/vlite";
+@import "../../node_modules/vlitejs/dist/vlite.css" layer(components);
+@import "../../node_modules/vlitejs/dist/plugins/volume-bar.css" layer(components);
+@import "./plugins/vlite" layer(components);
 
 /* VenoBox lightbox */
-@import "../../node_modules/venobox/dist/venobox.min.css";
-@import "./plugins/venobox";
+@import "../../node_modules/venobox/dist/venobox.min.css" layer(components);
+@import "./plugins/venobox" layer(components);
 
 /* Layout (ritmo verticale sezioni + sfondi data-bg) */
-@import "./layout/common";
-@import "./layout/section-bg";
+@import "./layout/common" layer(components);
+@import "./layout/section-bg" layer(overrides);
 
 /* Partial (scope globale) */
-@import "./partial/buttons";
-@import "./partial/forms";
-@import "./partial/main-menu";
-@import "./partial/mobile-menu";
-@import "./partial/pagination";
+@import "./partial/buttons" layer(components);
+@import "./partial/forms" layer(components);
+@import "./partial/main-menu" layer(components);
+@import "./partial/mobile-menu" layer(components);
+@import "./partial/pagination" layer(components);
 
 /* Components (scope di modulo: un file per block-* che ne ha bisogno) */
-/* @import "./components/nome-modulo"; */
+/* @import "./components/nome-modulo" layer(components); */
 
 /* Tailwind theme variables */
 /* Palette funzionale e scala tipografica fluida (reference 1920px → ~375px):
@@ -54,6 +59,9 @@
 	--color-light: #f2f1f0; /* Sfondo sezioni chiare (data-bg="light") */
 	--color-dark: #22262a; /* Sfondo sezioni scure (data-bg="dark") + testi forti */
 	--color-darker: #121417; /* Variante più scura (footer, overlay) */
+	--color-body: #64748b; /* Testo corrente */
+	--color-error: #dc2626; /* Errori di validazione form */
+	--color-focus: #1d4ed8; /* Anello di focus (deve restare visibile su ogni sfondo) */
 	--breakpoint-3xl: 112rem;
 	--shadow-custom: 0 0 1rem rgba(0, 0, 0, 0.15);
 	--font-base: ui-sans-serif, system-ui, sans-serif;

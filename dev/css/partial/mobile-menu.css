@@ -17,13 +17,25 @@
 
 .mobile-navigation {
     .nav-item {
+        /* Hover di base qui e non con hover:text-accent nel twig: da utility batterebbe
+           il bianco delle CTA sotto, che stanno nello stesso layer components */
+        &:hover {
+            color: var(--color-accent);
+        }
 
         &.cta {
-            @apply h-auto hover:bg-slate-500 bg-sky-50 hover:text-white;
+            height: auto;
+            background: var(--color-light);
+
+            &:hover {
+                background: var(--color-dark);
+                color: white;
+            }
         }
 
         &.cta-accent {
-            @apply bg-accent text-white;
+            background: var(--color-accent);
+            color: white;
         }
     }
 }

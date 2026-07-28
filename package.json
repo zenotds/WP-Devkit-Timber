@@ -1,6 +1,6 @@
 {
 	"name": "@zenotds/wp_devkit",
-	"version": "7.0",
+	"version": "7.5",
 	"description": "Zeno's WP DevKit",
 	"scripts": {
 		"postinstall": "[ -e ../../../wp-config.php ] && ln -sf ../../../wp-config.php ./wp-config.php || echo 'wp-config.php non trovato (devkit standalone): symlink saltato'",

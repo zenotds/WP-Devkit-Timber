@@ -1,5 +1,4 @@
 import tailwindcssPostcss from "@tailwindcss/postcss";
-import autoprefixer from "autoprefixer";
 import browserSync from "browser-sync";
 import chalk from "chalk";
 import chokidar from "chokidar";
@@ -31,23 +30,41 @@ process.emitWarning = (warning, ...args) => {
 };
 
 // ============================================
-// CONFIGURAZIONE BUILD (per progetto)
+// CONFIGURAZIONE
 // ============================================
+// I valori per-progetto stanno in devkit.config.json: questo file resta identico
+// tra devkit e progetti, così si aggiorna senza conflitti.
 
-// URL locale del sito da proxare con BrowserSync
-const PROXY_URL = "https://your-site.test";
+const CONFIG_FILE = "./devkit.config.json";
 
-// Browser da aprire in sviluppo
-const BROWSER = ["firefox developer edition"];
+const CONFIG_DEFAULTS = {
+	proxy: "https://your-site.test",
+	browser: ["default"],
+	watch: [
+		"./templates/",
+		"./blocks/",
+		"./woocommerce/",
+		"./dev/css/",
+		"./dev/js/",
+	],
+};
 
-// Cartelle osservate in watch (le mancanti vengono ignorate)
-const WATCH_PATHS = [
-	"./templates/",
-	"./blocks/",
-	"./woocommerce/",
-	"./dev/css/",
-	"./dev/js/",
-];
+function loadConfig() {
+	if (!fs.existsSync(CONFIG_FILE)) {
+		console.warn(`⚠️  ${CONFIG_FILE} non trovato: uso i default.`);
+		return CONFIG_DEFAULTS;
+	}
+
+	try {
+		const parsed = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
+		return { ...CONFIG_DEFAULTS, ...parsed };
+	} catch (error) {
+		console.error(`🚨 ${CONFIG_FILE} non valido: ${error.message}`);
+		return CONFIG_DEFAULTS;
+	}
+}
+
+const config = loadConfig();
 
 // ============================================
 
@@ -113,17 +130,23 @@ function normalizeFontPaths(files) {
 	}
 }
 
-// Function to log file sizes of generated assets
-function logFileSizes(files) {
-	files.forEach((file) => {
-		if (fs.existsSync(file)) {
-			const stats = fs.statSync(file);
-			const size = `${(stats.size / 1024).toFixed(2)} KB`;
-			console.log(`   ${file}    ${chalk.cyan(size)}`);
-		} else {
-			console.log(`   ${file}    ${chalk.red("File not found")}`);
+// I sourcemap non si generano in produzione (esporrebbero i sorgenti): rimuove quelli
+// lasciati da build di sviluppo precedenti, altrimenti restano orfani in assets/.
+function cleanupSourcemaps() {
+	for (const dir of ["./assets/css", "./assets/js"]) {
+		if (!fs.existsSync(dir)) continue;
+		for (const file of fs.readdirSync(dir)) {
+			if (file.endsWith(".map")) fs.unlinkSync(path.join(dir, file));
 		}
-	});
+	}
+}
+
+// Function to log file sizes of generated assets
+function logFileSizes(outputs) {
+	for (const [file, bytes] of outputs) {
+		const size = `${(bytes / 1024).toFixed(2)} KB`;
+		console.log(`   ${file}    ${chalk.cyan(size)}`);
+	}
 }
 
 // Entry points for JavaScript and CSS
@@ -168,15 +191,14 @@ function entryPoints() {
 	return entryPoints;
 }
 
+// Tailwind 4 risolve da sé gli @import e il prefixing (via Lightning CSS): niente
+// postcss-import né autoprefixer. Solo styles.css passa di qui, i file importati no.
 const postcssPlugin = {
 	name: "postcss",
 	setup(build) {
 		build.onLoad({ filter: /\.css$/ }, async (args) => {
 			const source = await fs.promises.readFile(args.path, "utf8");
-			const result = await postcss([
-				tailwindcssPostcss(),
-				autoprefixer(),
-			]).process(source, {
+			const result = await postcss([tailwindcssPostcss()]).process(source, {
 				from: args.path,
 			});
 			return { contents: result.css, loader: "css" };
@@ -184,13 +206,14 @@ const postcssPlugin = {
 	},
 };
 
-function createBuildOptions() {
+function createBuildOptions(entries) {
 	return {
-		entryPoints: entryPoints(),
+		entryPoints: entries,
 		outdir: "./assets",
 		bundle: true,
-		sourcemap: true,
+		sourcemap: !isProduction,
 		minify: isProduction,
+		metafile: true,
 		logLevel: isProduction ? "silent" : "info",
 		plugins: [postcssPlugin],
 		target: ["esnext"],
@@ -212,6 +235,25 @@ function createBuildOptions() {
 	};
 }
 
+// Context esbuild riusato tra le build: il rebuild incrementale è ~10x più veloce.
+// Si ricrea solo se cambia l'elenco degli entrypoint (un file in più in dev/js o dev/css).
+let context = null;
+let contextKey = "";
+
+async function getContext() {
+	const entries = entryPoints();
+	const key = Object.keys(entries).sort().join("|");
+
+	if (context && key === contextKey) return context;
+
+	if (context) await context.dispose();
+
+	contextKey = key;
+	context = await esbuild.context(createBuildOptions(entries));
+
+	return context;
+}
+
 // Function to run esbuild
 async function build() {
 	const startTime = Date.now();
@@ -221,27 +263,25 @@ async function build() {
 			updateVersion(); // Update version in production
 		}
 
-		await esbuild.build(createBuildOptions());
+		const ctx = await getContext();
+		const result = await ctx.rebuild();
 
-		const entries = entryPoints();
-		const scripts = [];
-		const styles = [];
+		const outputs = Object.entries(result.metafile.outputs)
+			.filter(([file]) => !file.endsWith(".map"))
+			.map(([file, meta]) => [file, meta.bytes]);
 
-		for (const entry in entries) {
-			if (entry.startsWith("js/")) {
-				scripts.push(`./assets/${entry}.js`);
-				scripts.push(`./assets/${entry}.js.map`); // Include source map
-			} else if (entry.startsWith("css/")) {
-				styles.push(`./assets/${entry}.css`);
-				styles.push(`./assets/${entry}.css.map`); // Include source map
-			}
+		const styles = outputs.filter(([file]) => file.endsWith(".css"));
+		const scripts = outputs.filter(([file]) => file.endsWith(".js"));
+
+		normalizeFontPaths(styles.map(([file]) => file));
+
+		if (isProduction) {
+			cleanupSourcemaps();
 		}
-
-		normalizeFontPaths(styles);
 
 		// Log file sizes for styles
 		if (styles.length > 0) {
-			console.log(`\n🟪 Styles compiled with Tailwind CSS and Autoprefixer!`);
+			console.log(`\n🟪 Styles compiled with Tailwind CSS!`);
 			logFileSizes(styles);
 		}
 
@@ -260,14 +300,20 @@ async function build() {
 
 let buildQueue = Promise.resolve();
 
-function queueBuild({ reload = false } = {}) {
+function queueBuild({ reload = false, cssOnly = false } = {}) {
 	buildQueue = buildQueue
 		.catch(() => {})
 		.then(async () => {
 			try {
 				await build();
 				if (!isProduction && reload) {
-					bs.reload();
+					// Sui cambi CSS BrowserSync inietta il foglio di stile senza ricaricare:
+					// la pagina non perde lo stato (menu aperti, modali, posizione di scroll).
+					if (cssOnly) {
+						bs.reload("*.css");
+					} else {
+						bs.reload();
+					}
 				}
 			} catch (error) {
 				console.error("🚨 Queued build failed:", error);
@@ -285,18 +331,20 @@ if (!isProduction) {
 			console.log(`🔭 Watching for changes...\n`);
 
 			bs.init({
-				proxy: PROXY_URL,
+				proxy: config.proxy,
 				open: true,
-				browser: BROWSER,
+				browser: config.browser,
 			});
 
 			chokidar
-				.watch(WATCH_PATHS, {
+				.watch(config.watch, {
 					ignoreInitial: true,
 				})
 				.on("all", (event, filePath) => {
-					console.log(`\n🚧 ${filePath} ${event}, rebuilding and reloading...`);
-					queueBuild({ reload: true });
+					const cssOnly = filePath.endsWith(".css");
+					const action = cssOnly ? "injecting" : "reloading";
+					console.log(`\n🚧 ${filePath} ${event}, rebuilding and ${action}...`);
+					queueBuild({ reload: true, cssOnly });
 				});
 		})
 		.catch((error) => {
@@ -304,7 +352,11 @@ if (!isProduction) {
 		});
 } else {
 	console.log(`🚀 Building for production...`);
-	queueBuild().catch((error) => {
-		console.error("🚨 Production build failed:", error);
-	});
+	queueBuild()
+		.then(async () => {
+			if (context) await context.dispose();
+		})
+		.catch((error) => {
+			console.error("🚨 Production build failed:", error);
+		});
 }

@@ -1,15 +1,15 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "bizen/section",
+	"name": "theme/section",
 	"title": "Sezione",
 	"description": "Sezione generica con titolo, sfondo e contenuto libero.",
-	"category": "bizen",
+	"category": "theme",
 	"icon": "align-wide",
 	"keywords": ["sezione", "section", "contenuto"],
 	"acf": {
 		"mode": "preview",
-		"renderCallback": "bizen_block_render"
+		"renderCallback": "theme_block_render"
 	},
 	"supports": {
 		"anchor": true,

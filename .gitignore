@@ -4,9 +4,11 @@
 #     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
 
 # Node artifact files
-package-lock.json
 node_modules/
 dist/
+
+# Sourcemap: generati solo in sviluppo, mai committati (esporrebbero i sorgenti)
+*.map
 
 # Configuration
 wp-config.php
@@ -54,7 +56,6 @@ Thumbs.db
 
 # Composer
 vendor
-composer.lock
 
 # AI — CLAUDE.md e PROJECT.md sono parte del devkit e vanno versionati
 .claude/*

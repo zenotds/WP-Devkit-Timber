@@ -8,9 +8,6 @@
 <link rel="pingback" href="{{ site.pingback_url }}" />
 <link rel="profile" href="http://gmpg.org/xfn/11">
 
-{# CSS e preload arrivano da functions/enqueue.php via wp_head: niente link manuali (doppio load) #}
-
-{# Anti-FOUC Alpine: inline così vale anche prima del CSS esterno. !important perché le utility display di Tailwind vincono per ordine #}
 <style>[x-cloak]{display:none!important}</style>
 
 {{function('wp_head')}}

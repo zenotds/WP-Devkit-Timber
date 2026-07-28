@@ -18,16 +18,16 @@
                 {# Language switcher (WPML, desktop) #}
                 {% if languages|length > 1 %}
                     <div class="language relative hidden items-center lg:flex" x-data="{ open: false }" @click.outside="open = false">
-                        <button class="flex h-10 cursor-pointer items-center gap-2 rounded border border-black/15 px-3 text-sm text-neutral-900 hover:border-accent hover:text-accent" @click="open = !open" :aria-expanded="open" aria-haspopup="true" aria-label="{{ __('Seleziona lingua', 'theme') }}" type="button">
+                        <button class="flex h-10 cursor-pointer items-center gap-2 rounded border border-black/15 px-3 text-sm text-dark hover:border-accent hover:text-accent" @click="open = !open" :aria-expanded="open" aria-haspopup="true" aria-label="{{ __('Seleziona lingua', 'theme') }}" type="button">
                             <i class="fal fa-globe text-base" aria-hidden="true"></i>
                             {{ current_language|upper }}
                             <i class="fal fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }" aria-hidden="true"></i>
                         </button>
 
-                        <div class="language-menu absolute right-0 top-full z-20 m-0 flex w-max flex-col bg-white text-neutral-900 shadow-lg" x-show="open" x-transition x-cloak role="menu" aria-label="{{ __('Lingue disponibili', 'theme') }}">
+                        <div class="language-menu absolute right-0 top-full z-20 m-0 flex w-max flex-col bg-white text-dark shadow-lg" x-show="open" x-transition x-cloak role="menu" aria-label="{{ __('Lingue disponibili', 'theme') }}">
                             {% for lang in languages %}
-                                <a class="{% if lang.active %}active{% endif %} flex items-center gap-2 p-2 text-sm hover:bg-neutral-100 focus:bg-neutral-100 focus:outline-none" href="{{ lang.url }}" role="menuitem" {% if lang.active %}aria-current="true"{% endif %} @click="open = false">
-                                    <span class="block h-2 w-2 rounded-full {{ lang.active ? 'bg-accent' : 'bg-neutral-400' }}"></span>
+                                <a class="{% if lang.active %}active{% endif %} flex items-center gap-2 p-2 text-sm hover:bg-light focus:bg-light focus:outline-none" href="{{ lang.url }}" role="menuitem" {% if lang.active %}aria-current="true"{% endif %} @click="open = false">
+                                    <span class="block h-2 w-2 rounded-full {{ lang.active ? 'bg-accent' : 'bg-body' }}"></span>
                                     <img src="{{ lang.country_flag_url }}" alt="" class="w-5 h-4" aria-hidden="true"/>
                                     {{ lang.native_name }}
                                 </a>
@@ -41,16 +41,16 @@
 
                     {% if languages|length > 1 %}
                         <div class="language relative" x-data="{ open: false }" @click.outside="open = false">
-                            <button class="flex h-10 cursor-pointer items-center gap-2 rounded border border-black/15 px-4 text-sm text-neutral-900 hover:border-accent hover:text-accent" @click="open = !open" :aria-expanded="open" aria-haspopup="true" aria-label="{{ __('Seleziona lingua', 'theme') }}" type="button">
+                            <button class="flex h-10 cursor-pointer items-center gap-2 rounded border border-black/15 px-4 text-sm text-dark hover:border-accent hover:text-accent" @click="open = !open" :aria-expanded="open" aria-haspopup="true" aria-label="{{ __('Seleziona lingua', 'theme') }}" type="button">
                                 <i class="fal fa-globe text-base" aria-hidden="true"></i>
                                 {{ current_language|upper }}
                                 <i class="fal fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }" aria-hidden="true"></i>
                             </button>
 
-                            <div class="language-menu absolute right-0 z-20 mt-1 flex w-max flex-col bg-white text-neutral-900 shadow-lg" x-show="open" x-transition x-cloak role="menu" aria-label="{{ __('Lingue disponibili', 'theme') }}">
+                            <div class="language-menu absolute right-0 z-20 mt-1 flex w-max flex-col bg-white text-dark shadow-lg" x-show="open" x-transition x-cloak role="menu" aria-label="{{ __('Lingue disponibili', 'theme') }}">
                                 {% for lang in languages %}
-                                    <a class="{% if lang.active %}active{% endif %} flex items-center gap-2 p-2 text-sm hover:bg-neutral-100 focus:bg-neutral-100 focus:outline-none" href="{{ lang.url }}" role="menuitem" {% if lang.active %}aria-current="true"{% endif %} @click="open = false">
-                                        <span class="block h-2 w-2 rounded-full {{ lang.active ? 'bg-accent' : 'bg-neutral-400' }}"></span>
+                                    <a class="{% if lang.active %}active{% endif %} flex items-center gap-2 p-2 text-sm hover:bg-light focus:bg-light focus:outline-none" href="{{ lang.url }}" role="menuitem" {% if lang.active %}aria-current="true"{% endif %} @click="open = false">
+                                        <span class="block h-2 w-2 rounded-full {{ lang.active ? 'bg-accent' : 'bg-body' }}"></span>
                                         <img src="{{ lang.country_flag_url }}" alt="" class="w-5 h-4" aria-hidden="true"/>
                                         {{ lang.native_name }}
                                     </a>

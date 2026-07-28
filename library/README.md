@@ -1,8 +1,8 @@
 # Library — dispensa moduli
 
 Moduli flexible content **pronti ma non attivi**: niente qui viene caricato dal tema.
-Sono la distillazione dei progetti reali (temi di produzione): si copia dentro
-solo ciò che serve al progetto, il boilerplate resta magro.
+Sono la distillazione di temi di produzione: si copia dentro solo ciò che serve al
+progetto, il boilerplate resta magro.
 
 Nel tema sono attivi solo `free` e `media` (i due universali): usali come riferimento
 del contratto modulo (vedi `.claude/CLAUDE.md` → Moduli).

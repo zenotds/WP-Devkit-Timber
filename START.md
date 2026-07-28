@@ -10,17 +10,17 @@
 - [ ] `style.css` → `Theme Name`, `Description`, `Version: 1.0d0`
 - [ ] Rinomina la cartella del tema (slug progetto)
 - [ ] `humans.txt` → dati progetto
-- [ ] `functions/config.php` → `THEME_NAMESPACE` se diverso da `bizen`
+- [ ] `functions/config.php` → `THEME_NAMESPACE` (default `theme`) col prefisso del progetto
 
 ## 2. Build
 
 - [ ] `npm install && composer install` (il postinstall crea il symlink `wp-config.php` se il tema è dentro un'installazione WP)
-- [ ] `esbuild.js` (blocco costanti in cima) → `PROXY_URL` con l'URL locale, `BROWSER` a piacere
+- [ ] `devkit.config.json` → `proxy` con l'URL locale, `browser` a piacere (`esbuild.js` non si tocca)
 - [ ] Prova: `npm run watch` deve compilare e aprire il proxy
 
 ## 3. Design system
 
-- [ ] `dev/css/styles.css` → blocco `@theme`: palette (`--color-accent/light/dark/darker`) e scala tipografica dai materiali design (mantieni i NOMI dei token)
+- [ ] `dev/css/styles.css` → blocco `@theme`: palette (`--color-accent/light/dark/darker/body/error/focus`) e scala tipografica dai materiali design (mantieni i NOMI dei token)
 - [ ] Font: woff2 in `assets/webfonts/`, `@font-face` in `dev/css/base/fonts.css`, `--font-base` nel `@theme`, preload in `functions/enqueue.php`
 - [ ] FontAwesome Pro (se serve): CSS in `dev/css/fontawesome/`, woff2 in `assets/webfonts/`, scommenta gli import in `styles.css`
 - [ ] `editor_color_palette()` in `functions/acf.php` (vedi CLAUDE.md → Ricette) allineata ai token

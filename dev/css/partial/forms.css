@@ -1,10 +1,15 @@
 .form {
 	.wpcf7-form {
-		@apply grid md:grid-cols-2 gap-6;
+		display: grid;
+		gap: calc(var(--spacing) * 6);
+
+		@media (width >= theme(--breakpoint-md)) {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 
 		&.sent {
 			.wpcf7-form-control-wrap {
-				@apply hidden;
+				display: none;
 			}
 		}
 
@@ -16,33 +21,39 @@
 	}
 
 	.form-group {
-		@apply grid self-start;
+		display: grid;
+		align-self: start;
 
 		&.full {
-			@apply col-span-full;
+			grid-column: 1 / -1;
 		}
 
 		label {
-			@apply mb-2;
+			margin-bottom: calc(var(--spacing) * 2);
 		}
 	}
 
 	.check-group {
-		@apply grid gap-2;
+		display: grid;
+		gap: calc(var(--spacing) * 2);
 
 		&.full {
-			@apply col-span-full;
+			grid-column: 1 / -1;
 		}
 	}
 
 	.send-group {
-		@apply col-span-full flex justify-end;
+		grid-column: 1 / -1;
+		display: flex;
+		justify-content: flex-end;
 
 		.send-btn {
-			@apply relative grid;
+			position: relative;
+			display: grid;
 
 			.wpcf7-spinner {
-				@apply absolute self-center;
+				position: absolute;
+				align-self: center;
 			}
 		}
 	}
@@ -52,48 +63,44 @@
 	select {
 		&:focus,
 		&:focus-visible {
-			@apply outline-0 ring-0;
+			outline: none;
+			box-shadow: none;
 		}
 	}
 
-	.form-input {
-		@apply w-full;
-	}
-
-	.form-textarea {
-		@apply w-full;
-	}
-
-	.form-select {
-		@apply w-full;
-	}
-
+	.form-input,
+	.form-textarea,
+	.form-select,
 	.form-multiselect {
-		@apply w-full;
+		width: 100%;
 	}
 
 	.form-toggle {
-		@apply w-full flex items-start gap-1.5;
+		width: 100%;
+		display: flex;
+		align-items: flex-start;
+		gap: calc(var(--spacing) * 1.5);
 
 		.form-checkbox,
 		.form-radio {
-			@apply mt-[3px];
+			margin-top: 3px;
 
 			&:focus {
-				@apply border-blue-700;
+				border-color: var(--color-focus);
 			}
 
 			&:checked {
-				@apply bg-accent;
+				background-color: var(--color-accent);
 			}
 		}
 
 		.toggle-label {
 			a {
-				@apply font-semibold underline;
+				font-weight: 600;
+				text-decoration-line: underline;
 
 				&:hover {
-					@apply text-accent;
+					color: var(--color-accent);
 				}
 			}
 		}
@@ -101,29 +108,43 @@
 
 	.wpcf7-checkbox,
 	.wpcf7-radio {
-		@apply w-full flex flex-wrap items-center gap-6;
+		width: 100%;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: calc(var(--spacing) * 6);
 	}
 
 	.wpcf7-list-item {
-		@apply m-0;
-	}
-
-	.wpcf7-submit {
+		margin: 0;
 	}
 
 	.wpcf7-not-valid {
-		@apply border-red-600;
+		border-color: var(--color-error);
 	}
 
 	.wpcf7-not-valid-tip {
-		@apply font-normal text-xs text-red-600 block mb-1 mt-1;
+		display: block;
+		margin-block: calc(var(--spacing) * 1);
+		font-size: var(--text-xs);
+		line-height: var(--text-xs--line-height);
+		font-weight: 400;
+		color: var(--color-error);
 	}
 
 	.wpcf7-response-output {
-		@apply rounded border text-sm font-normal !m-0 my-auto relative;
+		position: relative;
+		margin: 0 !important;
+		margin-block: auto;
+		border: 1px solid;
+		border-radius: var(--radius-sm);
+		font-size: var(--text-sm);
+		line-height: var(--text-sm--line-height);
+		font-weight: 400;
 
 		&.wpcf7-validation-errors {
-			@apply border-red-600 text-red-600;
+			border-color: var(--color-error);
+			color: var(--color-error);
 		}
 	}
 }

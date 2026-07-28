@@ -12,7 +12,7 @@ body {
 	-moz-osx-font-smoothing: grayscale;
 	position: relative;
 	overflow-x: clip;
-	color: var(--color-slate-500);
+	color: var(--color-body);
 	font-weight: 400;
 	font-family: var(--font-base);
 
@@ -32,7 +32,7 @@ picture {
 }
 
 /* Annulla margine dell'ultimo paragrafo in un blocco */
-*>p:last-child {
+* > p:last-child {
 	margin-bottom: 0;
 }
 
@@ -46,16 +46,19 @@ a {
 	}
 }
 
-/* *:focus, */
-* {
-	@apply focus-visible:ring-3 focus-visible:ring-blue-700 focus-visible:!outline-0;
+/* Focus visibile su ogni elemento: outline nativo (segue il border-radius e non
+   richiede z-index, a differenza del ring box-shadow) */
+*:focus-visible {
+	outline: 3px solid var(--color-focus);
+	outline-offset: 2px;
 }
 
 /* Tailwind extras */
-.child\:h-w-full>* {
-	@apply h-full w-full;
+.child\:h-w-full > * {
+	height: 100%;
+	width: 100%;
 }
 
-.child\:float-right>* {
-	@apply float-right;
+.child\:float-right > * {
+	float: right;
 }

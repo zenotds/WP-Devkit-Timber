@@ -11,7 +11,7 @@
 // --------------------------------------------
 // Prefisso dei blocchi custom ("name" nei block.json: <namespace>/<slug>).
 // dev/make-block.mjs legge questa costante: si cambia solo qui.
-define('THEME_NAMESPACE', 'bizen');
+define('THEME_NAMESPACE', 'theme');
 
 // --------------------------------------------
 // Gutenberg
