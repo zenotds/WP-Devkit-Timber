@@ -3,25 +3,31 @@
         <a class="nav-link font-base relative flex w-full self-center py-2 leading-none font-semibold whitespace-normal" href="{{ item.url }}" target="{{ item.target }}" role="menuitem" {% if item.current %}aria-current="page"{% endif %}>
             {{ item.name }}
         </a>
+        {# Apre il figlio E chiude questo livello: i due pannelli si scambiano in una sola animazione #}
         {% if item.children %}
-            <button class="menu-toggle flex h-10 w-10 shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-accent p-0 tracking-normal text-white hover:bg-accent/80" @click="$dispatch('menu-{{ item.id }}')" aria-label="{{ __('Apri sottomenu', 'theme') }} {{ item.name }}" aria-controls="menu-{{ item.id }}" aria-expanded="false">
+            <button class="menu-toggle flex h-10 w-10 shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-accent p-0 tracking-normal text-white hover:bg-accent/80" @click="$dispatch('menu-{{ item.id }}'); offcanvas = false" aria-label="{{ __('Apri sottomenu', 'theme') }} {{ item.name }}" aria-controls="menu-{{ item.id }}" aria-expanded="false">
                 <i class="fal fa-angle-right" aria-hidden="true"></i>
             </button>
         {% endif %}
     </div>
 {% endmacro %}
 
+{# UN SOLO livello aperto per volta: aprendo un figlio il genitore si chiude, e "indietro" lo #}
+{# riapre. I due pannelli scorrono insieme, uno rimpiazza l'altro. Da qui due conseguenze: #}
+{# gli handler sono TOGGLE (il dispatch di "indietro" deve poter riaccendere il genitore), e #}
+{# ogni livello ha il suo backdrop — non si sommano mai, perché uno solo è attivo #}
 {% macro offcanvas(item, id_prefix) %}
     {% if item.children %}
 
         <div id="{{ id_prefix }}{{ item.id }}" x-data="{ offcanvas: false }" class="offcanvas" :class="{ 'active': offcanvas }" x-on:{{ 'menu-' ~ item.id }}.window="offcanvas = !offcanvas" @keydown.escape.window="offcanvas = false">
 
-            <div class="backdrop fixed inset-0 bg-black/80 z-1000 transition-all duration-500" x-show="offcanvas" @click="offcanvas = false" aria-hidden="true"></div>
+            <div class="backdrop fixed inset-0 bg-black/80 z-1000 opacity-0 transition-opacity duration-500" :class="offcanvas && 'opacity-100'" @click="offcanvas = false" aria-hidden="true"></div>
 
-            <div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-1000 overflow-y-auto transition-all duration-500 max-w-full w-100" :class="{ 'active': offcanvas }" role="dialog" aria-modal="true" aria-labelledby="submenu-title-{{ item.id }}" x-trap.inert.noscroll="offcanvas">
+            <div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-1000 overflow-y-auto transition-transform duration-500 max-w-full w-100" :class="{ 'active': offcanvas }" role="dialog" aria-modal="true" aria-labelledby="submenu-title-{{ item.id }}" x-trap="offcanvas">
 
+                {# Indietro riapre il livello di sopra: `menu_item_parent` a 0 significa il primo #}
                 <div class="header border-b border-black/15 flex items-center p-4">
-                    <button class="action close me-auto flex h-10 w-10 shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-accent p-0 tracking-normal text-white hover:bg-accent/80" @click="offcanvas = false" aria-label="{{ __('Torna indietro', 'theme') }}">
+                    <button class="action close me-auto flex h-10 w-10 shrink-0 cursor-pointer text-xl items-center justify-center self-center rounded bg-accent p-0 tracking-normal text-white hover:bg-accent/80" @click="$dispatch('{{ item.menu_item_parent == '0' ? 'mobile-menu' : 'menu-' ~ item.menu_item_parent }}'); offcanvas = false" aria-label="{{ __('Torna indietro', 'theme') }}">
                         <i class="far fa-arrow-left" aria-hidden="true"></i>
                     </button>
                     <span id="submenu-title-{{ item.id }}" class="current font-semibold text-lg uppercase">
@@ -51,9 +57,10 @@
 
 <div id="mobile-menu" x-data="{ offcanvas: false }" class="offcanvas" :class="{ 'active': offcanvas }" x-on:mobile-menu.window="offcanvas = !offcanvas" @keydown.escape.window="offcanvas = false">
 
-    <div class="backdrop fixed inset-0 bg-black/80 z-1000 transition-all duration-500" x-show="offcanvas" @click="offcanvas = false" aria-hidden="true"></div>
+    {# Opacità e non x-show: x-show toglie `display` di colpo e il backdrop sparirebbe prima del pannello #}
+    <div class="backdrop fixed inset-0 bg-black/80 z-1000 opacity-0 transition-opacity duration-500" :class="offcanvas && 'opacity-100'" @click="offcanvas = false" aria-hidden="true"></div>
 
-    <div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-1000 overflow-y-auto transition-all duration-500 max-w-full w-100" :class="{ 'active': offcanvas }" role="dialog" aria-modal="true" aria-labelledby="mobile-menu-title" x-trap.inert.noscroll="offcanvas">
+    <div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-1000 overflow-y-auto transition-transform duration-500 max-w-full w-100" :class="{ 'active': offcanvas }" role="dialog" aria-modal="true" aria-labelledby="mobile-menu-title" x-trap.noscroll="offcanvas">
 
         <div class="header border-b border-black/15 flex items-center p-4">
 

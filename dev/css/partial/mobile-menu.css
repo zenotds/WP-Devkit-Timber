@@ -40,6 +40,13 @@
     }
 }
 
+/* La visibility è discreta: messa in transizione resta `visible` per tutta la durata e commuta */
+/* alla fine. Senza, chiudendo si nasconde subito e lo slide del pannello non si vede nemmeno */
+/* La durata è la stessa del transform del pannello e del fade del backdrop: si chiudono insieme */
+.offcanvas {
+    transition: visibility 0.5s;
+}
+
 .offcanvas:not(.active) {
     visibility: hidden;
 }
