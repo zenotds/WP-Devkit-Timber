@@ -33,13 +33,13 @@ define('GUTENBERG_CUSTOM_BLOCKS_ENABLED', false);
 
 // Blocchi core consentiti negli InnerBlocks quando i core blocks sono disabilitati
 define('GUTENBERG_INNER_CORE_BLOCKS', [
-    'core/paragraph',
-    'core/heading',
-    'core/list',
-    'core/list-item',
-    'core/buttons',
-    'core/button',
-    'core/image',
+	'core/paragraph',
+	'core/heading',
+	'core/list',
+	'core/list-item',
+	'core/buttons',
+	'core/button',
+	'core/image',
 ]);
 
 // --------------------------------------------
@@ -48,5 +48,5 @@ define('GUTENBERG_INNER_CORE_BLOCKS', [
 // Le chiavi NON si committano nel tema: definisci GMAPS_API_KEY in wp-config.php.
 // Qui c'è solo il fallback vuoto per evitare notice quando manca.
 if (!defined('GMAPS_API_KEY')) {
-    define('GMAPS_API_KEY', '');
+	define('GMAPS_API_KEY', '');
 }

@@ -12,16 +12,16 @@
 #}
 {# Niente `ignore missing`: un layout senza twig deve fallire rumorosamente, non sparire #}
 {% for content in post.meta('content') %}
-    {% include "components/block-" ~ content.acf_fc_layout ~ ".twig" %}
+	{% include "components/block-" ~ content.acf_fc_layout ~ ".twig" %}
 {% endfor %}
 
 {# Eventuale contenuto dell'editor classico, dopo i moduli #}
 {% if post.content %}
-    <section class="block-content">
-        <div class="container mx-auto">
-            <div class="wrapper typo-r">
-                {{ post.content }}
-            </div>
-        </div>
-    </section>
+	<section class="block-content">
+		<div class="container mx-auto">
+			<div class="wrapper typo-r">
+				{{ post.content }}
+			</div>
+		</div>
+	</section>
 {% endif %}

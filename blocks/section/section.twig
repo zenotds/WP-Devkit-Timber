@@ -3,13 +3,13 @@
     Context disponibile: block, fields, is_preview, post_id, content, block_id, classes
 #}
 <section class="{{ classes }}{{ fields.bg and fields.bg != 'none' ? ' bg-' ~ fields.bg }}" id="{{ block_id }}"{% if not is_preview %} data-loop{% endif %}>
-    <div class="container">
-        {% if fields.title %}
-            {% set tag = fields.tag|default('h2') %}
-            <{{ tag }} class="title">{{ fields.title }}</{{ tag }}>
-        {% endif %}
-        <div class="section-body">
-            <InnerBlocks />
-        </div>
-    </div>
+	<div class="container">
+		{% if fields.title %}
+			{% set tag = fields.tag|default('h2') %}
+			<{{ tag }} class="title">{{ fields.title }}</{{ tag }}>
+		{% endif %}
+		<div class="section-body">
+			<InnerBlocks />
+		</div>
+	</div>
 </section>

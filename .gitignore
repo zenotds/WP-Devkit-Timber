@@ -57,7 +57,8 @@ Thumbs.db
 # Composer
 vendor
 
-# AI — istruzioni e note di lavoro: SOLO locali, mai versionate
-.claude/
+# AI — le istruzioni e il backlog sono documentazione del framework e viaggiano col devkit.
+# Resta fuori solo la configurazione locale della macchina.
+.claude/settings.local.json
 .gemini
 .codex

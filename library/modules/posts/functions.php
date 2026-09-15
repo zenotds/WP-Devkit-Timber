@@ -7,37 +7,37 @@
 
 function theme_module_posts($content)
 {
-    $source = $content['source'] ?? 'latest';
+	$source = $content['source'] ?? 'latest';
 
-    if ($source === 'manual') {
-        $ids = $content['posts'] ?? [];
-        if (!$ids) {
-            return [];
-        }
-        return Timber::get_posts([
-            'post_type'      => 'post',
-            'post__in'       => $ids,
-            'orderby'        => 'post__in',
-            'posts_per_page' => -1,
-        ])->to_array();
-    }
+	if ($source === 'manual') {
+		$ids = $content['posts'] ?? [];
+		if (!$ids) {
+			return [];
+		}
+		return Timber::get_posts([
+			'post_type'      => 'post',
+			'post__in'       => $ids,
+			'orderby'        => 'post__in',
+			'posts_per_page' => -1,
+		])->to_array();
+	}
 
-    $args = [
-        'post_type'      => 'post',
-        'posts_per_page' => $content['limit'] ?? 3,
-        'orderby'        => 'date',
-        'order'          => 'DESC',
-    ];
+	$args = [
+		'post_type'      => 'post',
+		'posts_per_page' => $content['limit'] ?? 3,
+		'orderby'        => 'date',
+		'order'          => 'DESC',
+	];
 
-    if ($source === 'category' && !empty($content['category'])) {
-        $cat = $content['category'];
-        $tid = is_object($cat) ? $cat->term_id : (is_array($cat) ? reset($cat) : $cat);
-        $args['tax_query'] = [[
-            'taxonomy' => 'category',
-            'field'    => 'term_id',
-            'terms'    => $tid,
-        ]];
-    }
+	if ($source === 'category' && !empty($content['category'])) {
+		$cat = $content['category'];
+		$tid = is_object($cat) ? $cat->term_id : (is_array($cat) ? reset($cat) : $cat);
+		$args['tax_query'] = [[
+			'taxonomy' => 'category',
+			'field'    => 'term_id',
+			'terms'    => $tid,
+		]];
+	}
 
-    return Timber::get_posts($args)->to_array();
+	return Timber::get_posts($args)->to_array();
 }

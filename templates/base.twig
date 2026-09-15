@@ -2,51 +2,51 @@
 
 <html {{ site.language_attributes }}>
 
-    <head>
-        {% block html_head %}
-            {% include '/html/head.twig' %}
-        {% endblock %}
+	<head>
+		{% block html_head %}
+			{% include '/html/head.twig' %}
+		{% endblock %}
 
-        {% block custom_scripts %}
-            {% include '/tools/custom-scripts.twig' %}
-        {% endblock %}
+		{% block custom_scripts %}
+			{% include '/tools/custom-scripts.twig' %}
+		{% endblock %}
 
-        {% block extra_head %}{% endblock %}
-    </head>
+		{% block extra_head %}{% endblock %}
+	</head>
 
-    <body class="{{body_class}}">
+	<body class="{{body_class}}">
 
-        {% block extra_noscripts %}
-            {% include '/tools/custom-noscripts.twig' %}
-        {% endblock %}
+		{% block extra_noscripts %}
+			{% include '/tools/custom-noscripts.twig' %}
+		{% endblock %}
 
-        {# Header #}
-        {% block header %}
-            {% include '/partial/header.twig' %}
-        {% endblock %}
+		{# Header #}
+		{% block header %}
+			{% include '/partial/header.twig' %}
+		{% endblock %}
 
-        <main class="main" role="main">
-            {% block content %}
-                Sorry, no content
-            {% endblock %}
-        </main>
+		<main class="main" role="main">
+			{% block content %}
+				Sorry, no content
+			{% endblock %}
+		</main>
 
-        {# CTA #}
-        {% block cta %}{% endblock %}
+		{# CTA #}
+		{% block cta %}{% endblock %}
 
-        {# Footer #}
-        {% block footer %}
-            {% include '/partial/footer.twig' %}
-        {% endblock %}
+		{# Footer #}
+		{% block footer %}
+			{% include '/partial/footer.twig' %}
+		{% endblock %}
 
-        {% block html_footer %}
-            {% include "/html/footer.twig" %}
-        {% endblock %}
+		{% block html_footer %}
+			{% include "/html/footer.twig" %}
+		{% endblock %}
 
-        {% block extra_js %}{% endblock %}
+		{% block extra_js %}{% endblock %}
 
-        {% block debug %}{% endblock %}
+		{% block debug %}{% endblock %}
 
-    </body>
+	</body>
 
 </html>

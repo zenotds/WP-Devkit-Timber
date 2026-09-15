@@ -1,148 +1,148 @@
 <nav class="main-menu ms-auto hidden items-stretch gap-3 xl:gap-4 2xl:gap-6 p-0 lg:flex text-sm xl:text-[15px] 2xl:text-base" id="main-menu" role="menubar" aria-label="{{ __('Menu', 'theme') }}">
-    {% for item in main_menu.items %}
+	{% for item in main_menu.items %}
 
-        {% if item.children %}
+		{% if item.children %}
 
-            {% set is_mega = item.menu_type == 'mega' %}
+			{% set is_mega = item.menu_type == 'mega' %}
 
-            <div class="nav-item {{ item.menu_type|default('default') }} {{ item.class }} {% if 'current-page-ancestor' in item.classes or item.current or item.current_page_parent or item.current_item_ancestor %}active{% endif %} {{ is_mega ? 'is-mega' : 'relative' }}"
-                role="none"
-                x-data="{ open: false, timer: null, show() { clearTimeout(this.timer); this.open = true }, hide() { this.timer = setTimeout(() => this.open = false, 200) } }"
-                @mouseenter="show()"
-                @mouseleave="hide()"
-                @keydown.escape.stop="open = false; $refs.toggle.focus()"
-                @focusout="if ($event.relatedTarget && !$el.contains($event.relatedTarget)) { open = false }">
+			<div class="nav-item {{ item.menu_type|default('default') }} {{ item.class }} {% if 'current-page-ancestor' in item.classes or item.current or item.current_page_parent or item.current_item_ancestor %}active{% endif %} {{ is_mega ? 'is-mega' : 'relative' }}"
+				role="none"
+				x-data="{ open: false, timer: null, show() { clearTimeout(this.timer); this.open = true }, hide() { this.timer = setTimeout(() => this.open = false, 200) } }"
+				@mouseenter="show()"
+				@mouseleave="hide()"
+				@keydown.escape.stop="open = false; $refs.toggle.focus()"
+				@focusout="if ($event.relatedTarget && !$el.contains($event.relatedTarget)) { open = false }">
 
-                <a class="nav-link relative flex h-full items-center whitespace-nowrap"
-                    href="{{ item.url }}" target="{{ item.target }}"
-                    role="menuitem" {% if item.current %}aria-current="page"{% endif %}>
-                    {{ item.name }}
-                </a>
+				<a class="nav-link relative flex h-full items-center whitespace-nowrap"
+					href="{{ item.url }}" target="{{ item.target }}"
+					role="menuitem" {% if item.current %}aria-current="page"{% endif %}>
+					{{ item.name }}
+				</a>
 
-                <button class="ml-1 flex cursor-pointer items-center self-center text-xs" type="button"
-                    x-ref="toggle"
-                    @click="open = !open"
-                    :aria-expanded="open"
-                    aria-haspopup="true"
-                    aria-controls="submenu-{{ item.id }}"
-                    aria-label="{{ __('Apri sottomenu', 'theme') }} {{ item.name }}">
-                    <i class="fal fa-angle-down transition-transform duration-200" :class="{ 'rotate-180': open }" aria-hidden="true"></i>
-                </button>
+				<button class="ml-1 flex cursor-pointer items-center self-center text-xs" type="button"
+					x-ref="toggle"
+					@click="open = !open"
+					:aria-expanded="open"
+					aria-haspopup="true"
+					aria-controls="submenu-{{ item.id }}"
+					aria-label="{{ __('Apri sottomenu', 'theme') }} {{ item.name }}">
+					<i class="fal fa-angle-down transition-transform duration-200" :class="{ 'rotate-180': open }" aria-hidden="true"></i>
+				</button>
 
-                {% if is_mega %}
+				{% if is_mega %}
 
-                    <div id="submenu-{{ item.id }}"
-                        class="mega-menu absolute left-0 right-0 top-full z-20 m-0 border-t border-black/10 bg-light text-dark shadow-lg"
-                        role="menu" aria-label="{{ item.name }}"
-                        x-show="open" x-cloak
-                        x-transition:enter="transition ease-out duration-150"
-                        x-transition:enter-start="opacity-0 -translate-y-2"
-                        x-transition:enter-end="opacity-100 translate-y-0"
-                        x-transition:leave="transition ease-in duration-100"
-                        x-transition:leave-start="opacity-100 translate-y-0"
-                        x-transition:leave-end="opacity-0 -translate-y-2">
+					<div id="submenu-{{ item.id }}"
+						class="mega-menu absolute left-0 right-0 top-full z-20 m-0 border-t border-black/10 bg-light text-dark shadow-lg"
+						role="menu" aria-label="{{ item.name }}"
+						x-show="open" x-cloak
+						x-transition:enter="transition ease-out duration-150"
+						x-transition:enter-start="opacity-0 -translate-y-2"
+						x-transition:enter-end="opacity-100 translate-y-0"
+						x-transition:leave="transition ease-in duration-100"
+						x-transition:leave-start="opacity-100 translate-y-0"
+						x-transition:leave-end="opacity-0 -translate-y-2">
 
-                        <div class="container py-10">
+						<div class="container py-10">
 
-                            <div class="grid grid-cols-3 gap-x-8 gap-y-8">
-                                {% for child in item.children %}
-                                    {% if child.master_object.status == 'publish' or child.type == 'taxonomy' or child.type == 'post_type_archive' %}
+							<div class="grid grid-cols-3 gap-x-8 gap-y-8">
+								{% for child in item.children %}
+									{% if child.master_object.status == 'publish' or child.type == 'taxonomy' or child.type == 'post_type_archive' %}
 
-                                        <div class="mega-col flex flex-col gap-3">
+										<div class="mega-col flex flex-col gap-3">
 
-                                            <a class="mega-col-title text-sm xl:text-[15px] 2xl:text-lg font-medium text-dark/70 hover:text-accent" href="{{ child.url }}" target="{{ child.target }}" role="menuitem">
-                                                {{ child.name }}
-                                            </a>
+											<a class="mega-col-title text-sm xl:text-[15px] 2xl:text-lg font-medium text-dark/70 hover:text-accent" href="{{ child.url }}" target="{{ child.target }}" role="menuitem">
+												{{ child.name }}
+											</a>
 
-                                            {% if child.children %}
-                                                <ul class="flex flex-col gap-2.5 p-0">
-                                                    {% for grandchild in child.children %}
-                                                        {% if grandchild.master_object.status == 'publish' or grandchild.type == 'taxonomy' or grandchild.type == 'post_type_archive' %}
-                                                            <li role="none">
-                                                                <a class="text-base xl:text-lg font-bold text-accent hover:text-accent/70 {% if grandchild.current or grandchild.current_item_ancestor %}text-accent/70{% endif %}" href="{{ grandchild.url }}" target="{{ grandchild.target }}" role="menuitem" {% if grandchild.current %}aria-current="page"{% endif %}>
-                                                                    {{ grandchild.name }}
-                                                                </a>
-                                                            </li>
-                                                        {% endif %}
-                                                    {% endfor %}
-                                                </ul>
-                                            {% endif %}
+											{% if child.children %}
+												<ul class="flex flex-col gap-2.5 p-0">
+													{% for grandchild in child.children %}
+														{% if grandchild.master_object.status == 'publish' or grandchild.type == 'taxonomy' or grandchild.type == 'post_type_archive' %}
+															<li role="none">
+																<a class="text-base xl:text-lg font-bold text-accent hover:text-accent/70 {% if grandchild.current or grandchild.current_item_ancestor %}text-accent/70{% endif %}" href="{{ grandchild.url }}" target="{{ grandchild.target }}" role="menuitem" {% if grandchild.current %}aria-current="page"{% endif %}>
+																	{{ grandchild.name }}
+																</a>
+															</li>
+														{% endif %}
+													{% endfor %}
+												</ul>
+											{% endif %}
 
-                                        </div>
+										</div>
 
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
+									{% endif %}
+								{% endfor %}
+							</div>
 
-                        </div>
-                    </div>
+						</div>
+					</div>
 
-                {% else %}
+				{% else %}
 
-                    <div id="submenu-{{ item.id }}"
-                        class="dropdown-menu absolute top-full {% if loop.last %}right-0{% else %}left-0{% endif %} z-20 m-0 flex w-60 flex-col border border-black/10 bg-white text-dark shadow-lg"
-                            role="menu" aria-label="{{ item.name }}"
-                            x-show="open" x-cloak
-                            x-transition:enter="transition ease-out duration-150"
-                            x-transition:enter-start="opacity-0 -translate-y-2"
-                            x-transition:enter-end="opacity-100 translate-y-0"
-                            x-transition:leave="transition ease-in duration-100"
-                            x-transition:leave-start="opacity-100 translate-y-0"
-                            x-transition:leave-end="opacity-0 -translate-y-2">
+					<div id="submenu-{{ item.id }}"
+						class="dropdown-menu absolute top-full {% if loop.last %}right-0{% else %}left-0{% endif %} z-20 m-0 flex w-60 flex-col border border-black/10 bg-white text-dark shadow-lg"
+							role="menu" aria-label="{{ item.name }}"
+							x-show="open" x-cloak
+							x-transition:enter="transition ease-out duration-150"
+							x-transition:enter-start="opacity-0 -translate-y-2"
+							x-transition:enter-end="opacity-100 translate-y-0"
+							x-transition:leave="transition ease-in duration-100"
+							x-transition:leave-start="opacity-100 translate-y-0"
+							x-transition:leave-end="opacity-0 -translate-y-2">
 
-                        {% for child in item.children %}
-                            {% if child.master_object.status == 'publish' or child.type == 'taxonomy' or child.type == 'post_type_archive' %}
+						{% for child in item.children %}
+							{% if child.master_object.status == 'publish' or child.type == 'taxonomy' or child.type == 'post_type_archive' %}
 
-                                <div class="dropdown-item relative {% if not loop.last %}border-b border-black/10{% endif %}"
-                                    {% if child.children %}x-data="{ subOpen: false, subTimer: null, subShow() { clearTimeout(this.subTimer); this.subOpen = true }, subHide() { this.subTimer = setTimeout(() => this.subOpen = false, 200) } }" @mouseenter="subShow()" @mouseleave="subHide()"{% endif %}>
+								<div class="dropdown-item relative {% if not loop.last %}border-b border-black/10{% endif %}"
+									{% if child.children %}x-data="{ subOpen: false, subTimer: null, subShow() { clearTimeout(this.subTimer); this.subOpen = true }, subHide() { this.subTimer = setTimeout(() => this.subOpen = false, 200) } }" @mouseenter="subShow()" @mouseleave="subHide()"{% endif %}>
 
-                                    <a class="flex items-center p-4 text-sm lg:text-base hover:text-accent {% if child.current or child.current_item_ancestor %}text-accent{% endif %}" href="{{ child.url }}" target="{{ child.target }}" role="menuitem" {% if child.current %}aria-current="page"{% endif %}>
-                                        {{ child.name }}
-                                        {% if child.children %}
-                                            <i class="far fa-angle-right ml-auto text-xs" aria-hidden="true"></i>
-                                        {% endif %}
-                                    </a>
+									<a class="flex items-center p-4 text-sm lg:text-base hover:text-accent {% if child.current or child.current_item_ancestor %}text-accent{% endif %}" href="{{ child.url }}" target="{{ child.target }}" role="menuitem" {% if child.current %}aria-current="page"{% endif %}>
+										{{ child.name }}
+										{% if child.children %}
+											<i class="far fa-angle-right ml-auto text-xs" aria-hidden="true"></i>
+										{% endif %}
+									</a>
 
-                                    {% if child.children %}
-                                        <div class="dropdown-submenu absolute left-full top-0 z-30 m-0 flex w-56 flex-col border border-black/10 bg-white shadow-lg"
-                                            role="menu" aria-label="{{ child.name }}"
-                                            x-show="subOpen" x-cloak
-                                            x-transition:enter="transition ease-out duration-150"
-                                            x-transition:enter-start="opacity-0"
-                                            x-transition:enter-end="opacity-100"
-                                            x-transition:leave="transition ease-in duration-100"
-                                            x-transition:leave-start="opacity-100"
-                                            x-transition:leave-end="opacity-0">
-                                            {% for grandchild in child.children %}
-                                                {% if grandchild.master_object.status == 'publish' or grandchild.type == 'taxonomy' or grandchild.type == 'post_type_archive' %}
-                                                    <a class="flex items-center border-b border-black/10 p-4 text-sm font-semibold hover:text-accent {% if grandchild.current or grandchild.current_item_ancestor %}text-accent{% endif %}" href="{{ grandchild.url }}" target="{{ grandchild.target }}" role="menuitem" {% if grandchild.current %}aria-current="page"{% endif %}>
-                                                        {{ grandchild.name }}
-                                                    </a>
-                                                {% endif %}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
+									{% if child.children %}
+										<div class="dropdown-submenu absolute left-full top-0 z-30 m-0 flex w-56 flex-col border border-black/10 bg-white shadow-lg"
+											role="menu" aria-label="{{ child.name }}"
+											x-show="subOpen" x-cloak
+											x-transition:enter="transition ease-out duration-150"
+											x-transition:enter-start="opacity-0"
+											x-transition:enter-end="opacity-100"
+											x-transition:leave="transition ease-in duration-100"
+											x-transition:leave-start="opacity-100"
+											x-transition:leave-end="opacity-0">
+											{% for grandchild in child.children %}
+												{% if grandchild.master_object.status == 'publish' or grandchild.type == 'taxonomy' or grandchild.type == 'post_type_archive' %}
+													<a class="flex items-center border-b border-black/10 p-4 text-sm font-semibold hover:text-accent {% if grandchild.current or grandchild.current_item_ancestor %}text-accent{% endif %}" href="{{ grandchild.url }}" target="{{ grandchild.target }}" role="menuitem" {% if grandchild.current %}aria-current="page"{% endif %}>
+														{{ grandchild.name }}
+													</a>
+												{% endif %}
+											{% endfor %}
+										</div>
+									{% endif %}
 
-                                </div>
+								</div>
 
-                            {% endif %}
-                        {% endfor %}
-                    </div>
+							{% endif %}
+						{% endfor %}
+					</div>
 
-                {% endif %}
+				{% endif %}
 
-            </div>
+			</div>
 
-        {% else %}
+		{% else %}
 
-            <div class="nav-item {{ item.menu_type|default('default') }} {{ item.class }} {% if item.current %}active{% endif %} relative" role="none">
-                <a class="nav-link relative flex h-full items-center whitespace-nowrap"
-                    href="{{ item.url }}" target="{{ item.target }}"
-                    role="menuitem" {% if item.current %}aria-current="page"{% endif %}>
-                    {{ item.name }}
-                </a>
-            </div>
+			<div class="nav-item {{ item.menu_type|default('default') }} {{ item.class }} {% if item.current %}active{% endif %} relative" role="none">
+				<a class="nav-link relative flex h-full items-center whitespace-nowrap"
+					href="{{ item.url }}" target="{{ item.target }}"
+					role="menuitem" {% if item.current %}aria-current="page"{% endif %}>
+					{{ item.name }}
+				</a>
+			</div>
 
-        {% endif %}
-    {% endfor %}
+		{% endif %}
+	{% endfor %}
 </nav>

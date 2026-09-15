@@ -26,23 +26,23 @@ const twig = `{# Modulo ${moduleTitle} — TODO: descrizione in una riga; dipend
 {% set bg = content.bg|default('none') %}
 
 <section class="block-${slug}" id="{{ content.section_id|default('section-' ~ loop.index) }}" data-loop="{{ loop.index }}"{% if bg != 'none' %} data-bg="{{ bg }}"{% endif %}>
-    <div class="container mx-auto">
+	<div class="container mx-auto">
 
-        {# Intro standard: title 70 / tag 30 in admin, subtitle text-lead #}
-        {% if content.title or content.subtitle %}
-            <div class="intro mb-8 lg:mb-12">
-                {% if content.title %}
-                    <{{ tag }} class="title typo-h text-{{ tag }} has-[+*]:mb-4">{{ content.title }}</{{ tag }}>
-                {% endif %}
-                {% if content.subtitle %}
-                    <p class="subtitle text-lead">{{ content.subtitle }}</p>
-                {% endif %}
-            </div>
-        {% endif %}
+		{# Intro standard: title 70 / tag 30 in admin, subtitle text-lead #}
+		{% if content.title or content.subtitle %}
+			<div class="intro mb-8 lg:mb-12">
+				{% if content.title %}
+					<{{ tag }} class="title typo-h text-{{ tag }} has-[+*]:mb-4">{{ content.title }}</{{ tag }}>
+				{% endif %}
+				{% if content.subtitle %}
+					<p class="subtitle text-lead">{{ content.subtitle }}</p>
+				{% endif %}
+			</div>
+		{% endif %}
 
-        {# TODO: contenuto del modulo #}
+		{# TODO: contenuto del modulo #}
 
-    </div>
+	</div>
 </section>
 `;
 
