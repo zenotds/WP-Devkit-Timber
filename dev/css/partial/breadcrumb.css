@@ -1,0 +1,27 @@
+/* Breadcrumb Yoast: il markup lo genera il plugin (rimarkuppato in <ol><li><a> dai filtri in functions/custom.php), quindi le utility dei twig non lo raggiungono */
+.breadcrumb {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: calc(var(--spacing) * 1.5);
+	font-size: var(--text-sm);
+
+	li {
+		list-style: none;
+	}
+
+	/* Il separatore sta qui e non nell'output di Yoast: fra due <li> un testo nudo non è markup valido */
+	li + li::before {
+		content: "/";
+		margin-inline-end: calc(var(--spacing) * 1.5);
+		opacity: 0.4;
+	}
+
+	a {
+		color: inherit;
+
+		&:hover {
+			color: var(--color-accent);
+		}
+	}
+}

@@ -52,20 +52,6 @@ class StarterSite extends Site
 		$context['footer_menu'] = Timber::get_menu('footer_menu');
 		$context['credits_menu'] = Timber::get_menu('credits_menu');
 
-		// Collections
-		$context['posts'] = Timber::get_posts([
-			'post_type' => 'post',
-			'orderby' => 'date',
-			'order' => 'DESC',
-			'posts_per_page' => 20,
-		])->to_array();
-
-		// Taxonomies
-		$context['categories'] = Timber::get_terms([
-			'taxonomy' => 'category',
-			'hide_empty' => true,
-		]);
-
 		// Archives
 		$context['posts_page'] = get_option('page_for_posts');
 		// $context['cpt_page'] = get_post_type_archive_link('cpt');
@@ -78,15 +64,50 @@ class StarterSite extends Site
 
 		// YOAST Breadcrumbs
 		if (function_exists('yoast_breadcrumb') && !is_front_page()) {
-			$context['breadcrumbs'] = yoast_breadcrumb('<nav class="breadcrumb" aria-label="breadcrumbs">', '</nav>', false);
+			// La classe .breadcrumb la mette il filtro wpseo_breadcrumb_output_class sull'<ol> (functions/custom.php): qui resta il solo <nav> con l'etichetta
+			$context['breadcrumbs'] = yoast_breadcrumb('<nav aria-label="breadcrumbs">', '</nav>', false);
 		}
 
 		// Get options
 		if (function_exists('get_fields')) {
-			$context["settings"] = get_fields("options");
+			$context["settings"] = $this->get_settings();
 		};
 
 		return $context;
+	}
+
+	/**
+	 * Opzioni ACF con fallback sulla lingua di default.
+	 *
+	 * Con WPML attivo ACF legge le opzioni da `options_<lingua>` quando la lingua corrente non è quella di default (acf_get_valid_post_id): finché le opzioni della seconda lingua non sono compilate, header e footer restano senza logo, menu e testi — non tradotti, proprio assenti. Le opzioni della lingua di default riempiono le SOLE chiavi vuote, così una traduzione parziale è sempre meglio di un chrome rotto.
+	 */
+	private function get_settings()
+	{
+		$settings = get_fields('options') ?: [];
+
+		if (!function_exists('acf_get_setting')) {
+			return $settings;
+		}
+
+		$current = acf_get_setting('current_language');
+		$default = acf_get_setting('default_language');
+
+		if (!$current || !$default || $current === $default) {
+			return $settings;
+		}
+
+		acf_update_setting('current_language', $default);
+		$fallback = get_fields('options') ?: [];
+		acf_update_setting('current_language', $current);
+
+		foreach ($fallback as $key => $value) {
+			// `empty` no: azzererebbe uno 0 o un false scelti in traduzione
+			if (!isset($settings[$key]) || $settings[$key] === '' || $settings[$key] === []) {
+				$settings[$key] = $value;
+			}
+		}
+
+		return $settings;
 	}
 
 	public function theme_supports()
@@ -146,9 +167,12 @@ class StarterSite extends Site
 		/*
 		 * Inject theme CSS inside the block editor iframe (apiVersion 3).
 		 * WordPress prefixes selectors with .editor-styles-wrapper automatically.
+		 * Solo con Gutenberg attivo: con l'editor classico gli editor-styles iniettano Tailwind nell'admin, TinyMCE compreso, e sporcano le WYSIWYG.
 		 */
-		add_theme_support('editor-styles');
-		add_editor_style('assets/css/styles.min.css');
+		if (defined('GUTENBERG_ENABLED') && GUTENBERG_ENABLED) {
+			add_theme_support('editor-styles');
+			add_editor_style('assets/css/styles.min.css');
+		}
 	}
 
 	/**

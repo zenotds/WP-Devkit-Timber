@@ -1,39 +1,20 @@
 {% extends "base.twig" %}
+{% import '/partial/macros.twig' as macros %}
 
 {% block content %}
 	<div class="content-wrapper">
 		<article class="post-type-{{ post.post_type }}" id="post-{{ post.ID }}">
-			<img src="{{ post.thumbnail.src|resize(1200, 300) }}">
+			{# .content-wrapper non ha larghezza propria: l'immagine è a tutta pagina. ratio tiene la fascia 4:1 che il vecchio resize(1200, 300) otteneva croppando #}
+			{% if post.thumbnail %}{{ macros.image(post.thumbnail, { sizes: '100vw', ratio: '4/1', atf: true }) }}{% endif %}
 			<section class="article-content">
-				<h1 class="article-h1">{{ post.title }}</h1>
-				<a href="{{ post.link }}">{{ _e('edit') }}</a>
-				<p class="blog-author">
-					<span>By</span><a href="{{post.author.path}}"> {{ post.author.name }} </a><span>&bull;</span> <time datetime="{{ post.date|date('Y-m-d H:i:s') }}">{{ post.date }}</time>
+				<h1 class="title typo-h text-h1">{{ post.title }}</h1>
+				<p class="meta">
+					<time datetime="{{ post.date('Y-m-d') }}">{{ post.date }}</time>
 				</p>
-				<div class="article-body">
-					{{post.content}}
+				<div class="article-body typo-r">
+					{{ post.content }}
 				</div>
-			</section>
-
-			<!-- comment box -->
-			<section class="comment-box">
-				<!-- comments -->
-				<div class="comments">
-				    {% if post.comments %}
-					<h3> comments </h3>
-					{% for cmt in post.comments %}
-					    {% include "comment.twig" with {comment:cmt} %}
-					{% endfor %}
-				    {% endif %}
-				</div>
-
-				{% if post.comment_status == "closed" %}
-					<p> comments for this post are closed </p>
-				{% else %}
-				    <!-- comment form -->
-				    {% include "comment-form.twig" %}
-				{% endif %}
 			</section>
 		</article>
-	</div><!-- /content-wrapper -->
+	</div>
 {% endblock %}

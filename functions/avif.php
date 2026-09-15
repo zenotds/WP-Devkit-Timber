@@ -2,35 +2,34 @@
 /**
  * Timber AVIF Converter
  *
- * @version 5.3.1
+ * @version 6.0.0
  * @author Francesco Zeno Selva
  * @link https://github.com/zenotds/timber-avif
  *
- * Performance-first image optimization for Timber 2.x.
- * Leverages Timber's native |resize and |towebp. Adds AVIF support.
+ * Responsive images for Timber 2.x, with AVIF/WebP generated next to the original.
  *
  * Architecture:
+ *  - One shared set of canonical widths for the whole theme, so variants are reused
+ *    across modules instead of multiplying per template
+ *  - One modern format per request, resolved from what the server can encode
  *  - Fast file_exists check with per-request static cache
- *  - If AVIF/WebP sibling exists → serve it instantly (zero overhead)
- *  - If not → convert inline up to MAX_INLINE_CONVERSIONS per request
- *  - Overflow → background queue (shutdown + wp-cron)
- *  - Failed conversions are remembered for 24h (no wasteful retries)
- *  - WebP falls back to Timber's native |towebp (already fast/cached)
+ *  - Missing variants: converted inline up to a budget, then after the response,
+ *    then in a queue drained by cron or by admin requests
+ *  - Failed conversions are remembered for 24h, keyed to quality and engine
+ *  - Never upscales past the original width
  *
- * Twig filters:
- *   |toavif            — convert/lookup AVIF for this image
- *   |towebp            — (native Timber, untouched)
- *   |avif_src(w, h)    — resize + AVIF lookup/conversion
- *   |webp_src(w, h)    — resize + WebP lookup (Timber fallback)
- *   |best_src(w, h)    — returns best available: AVIF > WebP > original
+ * Twig:
+ *   image_sources(image, opts)   — srcset data for a responsive <picture> (see macros.twig)
+ *   |toavif                      — convert/lookup AVIF for this image
+ *   |avif_src(w, h)              — resize + AVIF lookup/conversion
+ *   |webp_src(w, h)              — resize + WebP lookup
+ *   |best_src(w, h)              — best available: AVIF > WebP > original
  *
  * Timber Image properties (via AVIFImage):
- *   image.avif         — AVIF URL or original
- *   image.webp         — WebP URL or original
- *   image.best         — best available format URL
+ *   image.avif / image.webp / image.best
  *
  * Admin:
- *   Settings → Timber AVIF (settings, tools, statistics)
+ *   Settings → Timber AVIF (settings, tools, statistics, logs)
  *
  * WP-CLI:
  *   wp timber-avif detect        — show available conversion engines
@@ -58,7 +57,7 @@ if (class_exists('Timber\\Image') && !class_exists('AVIFImage')) {
 }
 
 class TimberAVIF {
-	const VERSION     = '5.3.1';
+	const VERSION     = '6.0.0';
 	const OPTION_KEY  = 'timber_avif_settings';
 	const QUEUE_KEY   = 'timber_avif_queue';
 	const LOG_KEY     = 'timber_avif_log';
@@ -68,10 +67,21 @@ class TimberAVIF {
 	const STALE_LOCK_TIMEOUT = 300;
 
 	// Defaults
-	const DEFAULT_AVIF_QUALITY = 80;
-	const DEFAULT_WEBP_QUALITY = 82;
+	// Quality scales are not comparable across codecs: AVIF 65 already sits above JPEG 95 in perceived quality.
+	const DEFAULT_AVIF_QUALITY = 65;
+	const DEFAULT_WEBP_QUALITY = 90;
+	const DEFAULT_JPEG_QUALITY = 95;
 	const MAX_IMAGE_DIMENSION  = 4096;
 	const MAX_FILE_SIZE_MB     = 50;
+
+	// One shared set of widths for the whole theme, so variants are reused across modules instead of multiplying per recipe.
+	const CANONICAL_WIDTHS = [320, 480, 640, 768, 1024, 1280, 1600, 1920, 2560];
+
+	// Generation ceiling, matching WordPress big_image_size_threshold.
+	const MAX_GENERATED_WIDTH = 2560;
+
+	// Candidate cap per image: a single call site must not be able to flood the library.
+	const MAX_CANDIDATES = 8;
 
 	// Per-request inline conversion budget.
 	// Once exhausted, remaining conversions go to background queue.
@@ -90,17 +100,25 @@ class TimberAVIF {
 	private static ?array $upload_dir_cache = null;
 
 	/* ─────────────────────────────────────────────
-     * Bootstrap
-     * ───────────────────────────────────────────── */
+	 * Bootstrap
+	 * ───────────────────────────────────────────── */
 
 	public static function init(): void {
 		self::load_settings();
+		self::load_textdomain();
 
 		add_filter('timber/twig', [__CLASS__, 'add_twig_filters']);
 		add_filter('timber/image/new_class', function () {
 			return class_exists('AVIFImage') ? 'AVIFImage' : 'Timber\\Image';
 		});
 		add_action('wp_generate_attachment_metadata', [__CLASS__, 'on_upload'], 20, 2);
+
+		// Fallback-format quality. WordPress defaults to 82; forcing 100 doubles file size for no visible gain.
+		add_filter('jpeg_quality', fn() => (int) self::setting('jpeg_quality', self::DEFAULT_JPEG_QUALITY));
+		add_filter('wp_editor_set_quality', fn($q, $mime) => $mime === 'image/jpeg' ? (int) self::setting('jpeg_quality', self::DEFAULT_JPEG_QUALITY) : $q, 10, 2);
+
+		// Ceiling on the uploaded original: past this width WordPress scales down and keeps the -scaled file.
+		add_filter('big_image_size_threshold', fn() => (int) self::setting('max_upload_dimension', 2560));
 
 		// Admin
 		add_action('admin_menu', [__CLASS__, 'register_admin_page']);
@@ -115,6 +133,12 @@ class TimberAVIF {
 
 		// Cron
 		add_action(self::CRON_HOOK, [__CLASS__, 'process_cron_queue']);
+
+		// Con DISABLE_WP_CRON l'hook non scatta mai e la coda resta ferma: in admin la si smaltisce
+		// a piccoli passi dopo la risposta, dove un rallentamento non si vede.
+		if (is_admin() && (defined('DISABLE_WP_CRON') && DISABLE_WP_CRON)) {
+			add_action('shutdown', [__CLASS__, 'drain_queue_in_admin'], 99);
+		}
 		if (!wp_next_scheduled(self::CRON_HOOK)) {
 			wp_schedule_event(time(), 'hourly', self::CRON_HOOK);
 		}
@@ -135,18 +159,39 @@ class TimberAVIF {
 		}
 	}
 
+	/**
+	 * Admin strings ship in English and a .mo translates them.
+	 * Looked up in the theme's languages/ folder first, then next to this file.
+	 * Nothing to install: without a .mo the UI stays in English.
+	 */
+	private static function load_textdomain(): void {
+		if (!is_admin()) return;
+
+		$file = 'timber-avif-' . determine_locale() . '.mo';
+
+		foreach ([get_stylesheet_directory(), get_template_directory(), __DIR__] as $dir) {
+			$mofile = $dir . '/languages/' . $file;
+			if (is_readable($mofile)) {
+				load_textdomain('timber-avif', $mofile);
+				return;
+			}
+		}
+	}
+
 	private static function load_settings(): void {
 		$defaults = [
-			'generate_avif_uploads'   => true,
-			'generate_webp_uploads'   => true,
 			'avif_quality'            => self::DEFAULT_AVIF_QUALITY,
 			'webp_quality'            => self::DEFAULT_WEBP_QUALITY,
 			'only_if_smaller'         => true,
 			'max_dimension'           => self::MAX_IMAGE_DIMENSION,
 			'max_file_size'           => self::MAX_FILE_SIZE_MB,
 			'max_inline_conversions'  => self::MAX_INLINE_CONVERSIONS,
-			'pregenerate_breakpoints' => false,
-			'breakpoint_widths'       => '640,768,1024,1280,1600,1920,2560',
+			'jpeg_quality'            => self::DEFAULT_JPEG_QUALITY,
+			'format_mode'             => 'auto',
+			'pregenerate_breakpoints' => true,
+			'breakpoint_widths'       => implode(',', self::CANONICAL_WIDTHS),
+			'pregenerate_widths'      => '640,1024,1600,1920',
+			'max_upload_dimension'    => 2560,
 		];
 		$saved = get_option(self::OPTION_KEY, []);
 		self::$settings = wp_parse_args($saved, $defaults);
@@ -168,8 +213,8 @@ class TimberAVIF {
 	}
 
 	/* ─────────────────────────────────────────────
-     * Twig Filters
-     * ───────────────────────────────────────────── */
+	 * Twig Filters
+	 * ───────────────────────────────────────────── */
 
 	public static function add_twig_filters($twig) {
 		$twig->addFilter(new \Twig\TwigFilter('toavif', [__CLASS__, 'filter_toavif']));
@@ -179,12 +224,13 @@ class TimberAVIF {
 		$twig->addFunction(new \Twig\TwigFunction('avif_src', [__CLASS__, 'filter_avif_src']));
 		$twig->addFunction(new \Twig\TwigFunction('webp_src', [__CLASS__, 'filter_webp_src']));
 		$twig->addFunction(new \Twig\TwigFunction('best_src', [__CLASS__, 'filter_best_src']));
+		$twig->addFunction(new \Twig\TwigFunction('image_sources', [__CLASS__, 'image_sources']));
 		return $twig;
 	}
 
 	/**
-     * |toavif — Get or create AVIF version of this image.
-     */
+	 * |toavif — Get or create AVIF version of this image.
+	 */
 	public static function filter_toavif($src): string {
 		$url = self::extract_url($src);
 		if (!$url) return '';
@@ -192,9 +238,9 @@ class TimberAVIF {
 	}
 
 	/**
-     * |avif_src(width, height) — Resize via Timber, then get/create AVIF.
-     * Accepts float from Twig math operations.
-     */
+	 * |avif_src(width, height) — Resize via Timber, then get/create AVIF.
+	 * Accepts float from Twig math operations.
+	 */
 	public static function filter_avif_src($src, $width = null, $height = null): string {
 		$url = self::extract_url($src);
 		if (!$url) return '';
@@ -210,9 +256,9 @@ class TimberAVIF {
 	}
 
 	/**
-     * |webp_src(width, height) — Resize via Timber, then get/create WebP.
-     * Checks for sibling .webp first, falls back to Timber's native towebp.
-     */
+	 * |webp_src(width, height) — Resize via Timber, then get/create WebP.
+	 * Checks for sibling .webp first, falls back to Timber's native towebp.
+	 */
 	public static function filter_webp_src($src, $width = null, $height = null): string {
 		$url = self::extract_url($src);
 		if (!$url) return '';
@@ -243,8 +289,8 @@ class TimberAVIF {
 	}
 
 	/**
-     * |best_src(width, height) — Returns best available: AVIF > WebP > original.
-     */
+	 * |best_src(width, height) — Returns best available: AVIF > WebP > original.
+	 */
 	public static function filter_best_src($src, $width = null, $height = null): string {
 		$url = self::extract_url($src);
 		if (!$url) return '';
@@ -265,14 +311,153 @@ class TimberAVIF {
 	}
 
 	/* ─────────────────────────────────────────────
-     * Core: Get or Create Sibling
-     *
-     * 1. Static cache check (free)
-     * 2. file_exists check (fast)
-     * 3. If missing & budget > 0: convert inline
-     * 4. If missing & budget exhausted: queue for background
-     * 5. Return sibling URL or original URL
-     * ───────────────────────────────────────────── */
+	 * Responsive sources
+	 *
+	 * Builds everything <picture> needs in one pass: fallback srcset, modern-format
+	 * srcset, and width/height attributes. Widths come from one shared canonical set.
+	 * ───────────────────────────────────────────── */
+
+	/**
+	 * Modern format to serve, resolved once per request from what this server can encode.
+	 */
+	public static function modern_format(): ?string {
+		static $resolved = null;
+		if ($resolved !== null) return $resolved ?: null;
+
+		$mode = self::setting('format_mode', 'auto');
+		if ($mode === 'off') return ($resolved = '') ? null : null;
+
+		if ($mode === 'avif' || $mode === 'webp') {
+			$resolved = (self::detect_capabilities($mode) !== 'none') ? $mode : '';
+			return $resolved ?: null;
+		}
+
+		if (self::detect_capabilities('avif') !== 'none')      $resolved = 'avif';
+		elseif (self::detect_capabilities('webp') !== 'none')  $resolved = 'webp';
+		else                                                   $resolved = '';
+
+		return $resolved ?: null;
+	}
+
+	/**
+	 * Candidate widths for an image: canonical (or custom) set, never beyond the original.
+	 */
+	public static function candidate_widths(int $original_width, array $custom = [], ?int $max = null): array {
+		$widths = $custom ?: self::canonical_widths();
+
+		$ceiling = min($original_width, self::MAX_GENERATED_WIDTH);
+		if ($max) $ceiling = min($ceiling, $max);
+
+		$widths = array_values(array_unique(array_filter(array_map('intval', $widths), fn($w) => $w > 0 && $w <= $ceiling)));
+		sort($widths);
+
+		// An image smaller than every candidate is still served at its real size.
+		if (!$widths) return [$ceiling];
+
+		// The full-size candidate covers high-density screens.
+		if (end($widths) < $ceiling) $widths[] = $ceiling;
+
+		// Past the cap, thin out evenly while always keeping the smallest and largest.
+		$count = count($widths);
+		if ($count > self::MAX_CANDIDATES) {
+			$keep = [];
+			$step = ($count - 1) / (self::MAX_CANDIDATES - 1);
+			for ($i = 0; $i < self::MAX_CANDIDATES; $i++) $keep[] = $widths[(int) round($i * $step)];
+			$widths = array_values(array_unique($keep));
+		}
+
+		return $widths;
+	}
+
+	private static function canonical_widths(): array {
+		$raw = (string) self::setting('breakpoint_widths', '');
+		$widths = array_filter(array_map('intval', array_map('trim', explode(',', $raw))));
+		return $widths ?: self::CANONICAL_WIDTHS;
+	}
+
+	/**
+	 * Data for a responsive <picture>. See the image() macro in partial/macros.twig.
+	 *
+	 * $opts: widths (array), max (int), ratio (float|'16/9')
+	 */
+	public static function image_sources($src, array $opts = []): array {
+		$empty = ['ok' => false, 'src' => '', 'srcset' => '', 'width' => null, 'height' => null, 'modern' => null];
+
+		$url = self::extract_url($src);
+		if (!$url) return $empty;
+
+		[$ow, $oh] = self::source_dimensions($src, $url);
+		if (!$ow) return array_merge($empty, ['ok' => true, 'src' => $url]);
+
+		$ratio = self::parse_ratio($opts['ratio'] ?? null) ?: ($oh ? $ow / $oh : null);
+
+		$widths = self::candidate_widths($ow, (array) ($opts['widths'] ?? []), isset($opts['max']) ? (int) $opts['max'] : null);
+		$modern = self::modern_format();
+
+		$fallback = [];
+		$modern_set = [];
+		foreach ($widths as $w) {
+			$h = ($ratio && !empty($opts['ratio'])) ? (int) round($w / $ratio) : null;
+
+			$resized = self::timber_resize($url, $w, $h);
+			$fallback[] = $resized . ' ' . $w . 'w';
+
+			if ($modern) {
+				$sibling = self::get_or_create_sibling($resized, $modern);
+				if ($sibling !== $resized) $modern_set[] = $sibling . ' ' . $w . 'w';
+			}
+		}
+
+		// Fallback src: the candidate closest to 1024, where most viewports land.
+		$base = $widths[0];
+		foreach ($widths as $w) {
+			if (abs($w - 1024) < abs($base - 1024)) $base = $w;
+		}
+
+		return [
+			'ok'     => true,
+			'src'    => self::timber_resize($url, $base, ($ratio && !empty($opts['ratio'])) ? (int) round($base / $ratio) : null),
+			'srcset' => implode(', ', $fallback),
+			'width'  => $base,
+			'height' => $ratio ? (int) round($base / $ratio) : null,
+			'modern' => $modern_set ? ['type' => 'image/' . $modern, 'srcset' => implode(', ', $modern_set)] : null,
+		];
+	}
+
+	private static function source_dimensions($src, string $url): array {
+		if (is_object($src) && method_exists($src, 'width')) {
+			$w = (int) $src->width();
+			$h = (int) $src->height();
+			if ($w) return [$w, $h];
+		}
+
+		$path = self::url_to_path($url);
+		if ($path && file_exists($path)) {
+			$info = @getimagesize($path);
+			if ($info) return [(int) $info[0], (int) $info[1]];
+		}
+
+		return [0, 0];
+	}
+
+	private static function parse_ratio($ratio): ?float {
+		if (is_numeric($ratio)) return (float) $ratio ?: null;
+		if (is_string($ratio) && str_contains($ratio, '/')) {
+			[$w, $h] = array_map('trim', explode('/', $ratio, 2));
+			return ($w > 0 && $h > 0) ? ((float) $w / (float) $h) : null;
+		}
+		return null;
+	}
+
+	/* ─────────────────────────────────────────────
+	 * Core: Get or Create Sibling
+	 *
+	 * 1. Static cache check (free)
+	 * 2. file_exists check (fast)
+	 * 3. If missing & budget > 0: convert inline
+	 * 4. If missing & budget exhausted: queue for background
+	 * 5. Return sibling URL or original URL
+	 * ───────────────────────────────────────────── */
 
 	private static function get_or_create_sibling(string $url, string $format): string {
 		$path = self::url_to_path($url);
@@ -322,8 +507,8 @@ class TimberAVIF {
 	}
 
 	/**
-     * Quick existence check only (no conversion). Used for WebP before Timber fallback.
-     */
+	 * Quick existence check only (no conversion). Used for WebP before Timber fallback.
+	 */
 	private static function check_sibling_exists(string $url, string $format): ?string {
 		$path = self::url_to_path($url);
 		if (!$path) return null;
@@ -344,8 +529,8 @@ class TimberAVIF {
 	}
 
 	/**
-     * Derive sibling path: /path/to/image.jpg → /path/to/image.avif
-     */
+	 * Derive sibling path: /path/to/image.jpg → /path/to/image.avif
+	 */
 	private static function sibling_path(string $path, string $format): ?string {
 		$ext = ($format === 'webp') ? 'webp' : 'avif';
 		$new = preg_replace('/\.(jpe?g|png|gif|webp)$/i', '.' . $ext, $path);
@@ -353,8 +538,8 @@ class TimberAVIF {
 	}
 
 	/* ─────────────────────────────────────────────
-     * URL/Path Resolution
-     * ───────────────────────────────────────────── */
+	 * URL/Path Resolution
+	 * ───────────────────────────────────────────── */
 
 	private static function extract_url($src): string {
 		if ($src instanceof \Timber\Image) {
@@ -395,6 +580,14 @@ class TimberAVIF {
 
 	private static function timber_resize(string $url, ?int $width, ?int $height): string {
 		if (!$width && !$height) return $url;
+
+		// Timber upscales silently: a candidate wider than the original would be heavier and blurrier than the original itself.
+		$path = self::url_to_path($url);
+		if ($path && file_exists($path)) {
+			$info = @getimagesize($path);
+			if ($info && $width && $width >= (int) $info[0]) return $url;
+		}
+
 		try {
 			if (class_exists('Timber\\ImageHelper')) {
 				$resized = ImageHelper::resize($url, $width, $height ?: 0);
@@ -407,8 +600,8 @@ class TimberAVIF {
 	}
 
 	/* ─────────────────────────────────────────────
-     * Background Queue (overflow from inline budget)
-     * ───────────────────────────────────────────── */
+	 * Background Queue (overflow from inline budget)
+	 * ───────────────────────────────────────────── */
 
 	private static function queue_for_background(string $source_path, string $format): void {
 		$key = $source_path . ':' . $format;
@@ -446,6 +639,18 @@ class TimberAVIF {
 		self::$bg_queue = [];
 	}
 
+	/**
+	 * Smaltisce qualche job in coda a una richiesta admin. Serve dove wp-cron e disattivato.
+	 */
+	public static function drain_queue_in_admin(): void {
+		if (empty(get_option(self::QUEUE_KEY, []))) return;
+
+		if (function_exists('fastcgi_finish_request'))        fastcgi_finish_request();
+		elseif (function_exists('litespeed_finish_request'))  litespeed_finish_request();
+
+		self::process_cron_queue();
+	}
+
 	private static function add_to_cron_queue(string $path, string $format): void {
 		$queue = get_option(self::QUEUE_KEY, []);
 		$key = md5($path . ':' . $format);
@@ -472,9 +677,12 @@ class TimberAVIF {
 		$done = 0;
 		foreach ($queue as $key => $job) {
 			if ($done >= $batch) break;
-			self::convert_file($job['path'], $job['format']);
+			// Un sorgente sparito nel frattempo si scarta: ritentarlo a ogni giro e lavoro a vuoto.
+			if (file_exists($job['path'])) {
+				self::convert_file($job['path'], $job['format']);
+				$done++;
+			}
 			unset($queue[$key]);
-			$done++;
 		}
 
 		if (empty($queue)) {
@@ -488,8 +696,8 @@ class TimberAVIF {
 	}
 
 	/* ─────────────────────────────────────────────
-     * Actual Conversion
-     * ───────────────────────────────────────────── */
+	 * Actual Conversion
+	 * ───────────────────────────────────────────── */
 
 	private static function convert_file(string $source_path, string $format, bool $clear_failures = false): bool {
 		if (!file_exists($source_path)) {
@@ -526,6 +734,12 @@ class TimberAVIF {
 		$info = @getimagesize($source_path);
 		if (!$info) {
 			self::add_log($source_path, $format, 'failed', 'Cannot read image dimensions (corrupt or unsupported)');
+			return false;
+		}
+
+		// Converting an animated GIF drops the animation and keeps the first frame.
+		if (($info[2] ?? 0) === IMAGETYPE_GIF && self::is_animated_gif($source_path)) {
+			self::add_log($source_path, $format, 'skipped', 'Animated GIF');
 			return false;
 		}
 
@@ -591,8 +805,8 @@ class TimberAVIF {
 	}
 
 	/* ─────────────────────────────────────────────
-     * Conversion Engines
-     * ───────────────────────────────────────────── */
+	 * Conversion Engines
+	 * ───────────────────────────────────────────── */
 
 	public static function detect_capabilities(string $format = 'avif'): string {
 		$format = ($format === 'webp') ? 'webp' : 'avif';
@@ -601,9 +815,11 @@ class TimberAVIF {
 			return self::$conversion_methods[$format];
 		}
 
-		$cache_key = 'timber_avif_cap_' . $format;
+		// Key includes the SAPI: wp-cli, php-fpm and cron can be different PHP builds with different extensions.
+		// With a shared key, the CLI read "imagick" written by Apache and every conversion failed for no apparent reason.
+		$cache_key = 'timber_avif_cap_' . $format . '_' . self::runtime_key();
 		$cached = get_transient($cache_key);
-		if ($cached !== false) {
+		if ($cached !== false && self::method_available($cached, $format)) {
 			self::$conversion_methods[$format] = $cached;
 			return $cached;
 		}
@@ -619,6 +835,23 @@ class TimberAVIF {
 		self::$conversion_methods[$format] = $method;
 		self::log("Detected {$format} engine: {$method}", 'info');
 		return $method;
+	}
+
+	private static function runtime_key(): string {
+		return php_sapi_name() . '_' . PHP_MAJOR_VERSION . PHP_MINOR_VERSION;
+	}
+
+	/**
+	 * A cached engine is only valid if the extension is still present in this process.
+	 */
+	private static function method_available(string $method, string $format): bool {
+		return match ($method) {
+			'gd'      => function_exists($format === 'avif' ? 'imageavif' : 'imagewebp'),
+			'imagick' => extension_loaded('imagick'),
+			'exec'    => self::is_exec_available(),
+			'none'    => true,
+			default   => false,
+		};
 	}
 
 	private static function perform_conversion(string $src, string $dst, int $quality, string $format, string $method): bool {
@@ -675,6 +908,9 @@ class TimberAVIF {
 			$im->setResourceLimit(\Imagick::RESOURCETYPE_MEMORY, 256 * 1024 * 1024);
 			$im->setResourceLimit(\Imagick::RESOURCETYPE_TIME, 60);
 			$im->setImageFormat($format);
+			// setCompressionQuality writes to image_info->quality, which is what the coder reads.
+			// setImageCompressionQuality writes to image->quality and AVIF ignores it: quality would stay at the libheif default.
+			$im->setCompressionQuality($quality);
 			$im->setImageCompressionQuality($quality);
 			$im->stripImage();
 			$ok = $im->writeImage($dst);
@@ -700,8 +936,8 @@ class TimberAVIF {
 	}
 
 	/* ─────────────────────────────────────────────
-     * Capability Tests
-     * ───────────────────────────────────────────── */
+	 * Capability Tests
+	 * ───────────────────────────────────────────── */
 
 	private static function test_gd(string $format): bool {
 		try {
@@ -754,8 +990,21 @@ class TimberAVIF {
 	}
 
 	/* ─────────────────────────────────────────────
-     * Helpers
-     * ───────────────────────────────────────────── */
+	 * Helpers
+	 * ───────────────────────────────────────────── */
+
+	private static function is_animated_gif(string $path): bool {
+		$fh = @fopen($path, 'rb');
+		if (!$fh) return false;
+		$frames = 0;
+		$buffer = '';
+		while (!feof($fh) && $frames < 2) {
+			$buffer = substr($buffer, -1) . fread($fh, 8192);
+			$frames += preg_match_all('/\x00\x21\xF9\x04.{4}\x00(\x2C|\x21)/s', $buffer);
+		}
+		fclose($fh);
+		return $frames > 1;
+	}
 
 	private static function is_valid_file(string $path, string $format): bool {
 		if (!file_exists($path) || filesize($path) < 50) return false;
@@ -765,19 +1014,33 @@ class TimberAVIF {
 	}
 
 	/**
-     * Remember a failed conversion so we don't retry for 24h.
-     * Stolen from Codex's solution — smart optimization.
-     */
+	 * Remember a failed conversion so we don't retry for 24h.
+	 * Stolen from Codex's solution — smart optimization.
+	 */
+	/**
+	 * Quality and engine fingerprint, so changing settings retires stale failures.
+	 */
+	private static function failure_key(string $dest_path, string $format): string {
+		$fingerprint = implode('|', [
+			$format,
+			self::setting($format . '_quality'),
+			self::$conversion_methods[$format] ?? '',
+			self::runtime_key(),
+			$dest_path,
+		]);
+		return 'tavif_fail_' . md5($fingerprint);
+	}
+
 	private static function remember_failure(string $dest_path, string $format): void {
-		set_transient('tavif_fail_' . md5($format . '|' . $dest_path), 1, self::FAILURE_TTL);
+		set_transient(self::failure_key($dest_path, $format), 1, self::FAILURE_TTL);
 	}
 
 	private static function is_failed(string $dest_path, string $format): bool {
-		return (bool) get_transient('tavif_fail_' . md5($format . '|' . $dest_path));
+		return (bool) get_transient(self::failure_key($dest_path, $format));
 	}
 
 	private static function clear_failure(string $dest_path, string $format): void {
-		delete_transient('tavif_fail_' . md5($format . '|' . $dest_path));
+		delete_transient(self::failure_key($dest_path, $format));
 	}
 
 	private static function parse_memory_limit(string $limit): int {
@@ -799,9 +1062,9 @@ class TimberAVIF {
 	}
 
 	/**
-     * Structured log entry for the admin Logs tab.
-     * @param string $status  'converted' | 'skipped' | 'failed' | 'error' | 'queued'
-     */
+	 * Structured log entry for the admin Logs tab.
+	 * @param string $status  'converted' | 'skipped' | 'failed' | 'error' | 'queued'
+	 */
 	private static function add_log(string $file, string $format, string $status, string $reason = ''): void {
 		$logs = get_option(self::LOG_KEY, []);
 		if (!is_array($logs)) $logs = [];
@@ -833,16 +1096,16 @@ class TimberAVIF {
 	}
 
 	/* ─────────────────────────────────────────────
-     * Upload Hook
-     * ───────────────────────────────────────────── */
+	 * Upload Hook
+	 * ───────────────────────────────────────────── */
 
 	public static function on_upload(array $metadata, int $attachment_id): array {
 		$file = get_attached_file($attachment_id);
 		if (!$file || !file_exists($file)) return $metadata;
 
-		$do_avif = self::setting('generate_avif_uploads');
-		$do_webp = self::setting('generate_webp_uploads');
-		if (!$do_avif && !$do_webp) return $metadata;
+		// Si genera il formato che il sito serve davvero, deciso una volta da format_mode.
+		$modern = self::modern_format();
+		if (!$modern) return $metadata;
 
 		$paths = [$file];
 		if (!empty($metadata['sizes']) && is_array($metadata['sizes'])) {
@@ -852,19 +1115,46 @@ class TimberAVIF {
 			}
 		}
 
+		// The most-used widths are built here, so the front end converts nothing on first load.
+		if (self::setting('pregenerate_breakpoints', true)) {
+			foreach (self::pregenerate_paths($file) as $p) $paths[] = $p;
+		}
+
 		// Convert directly on upload (runs in admin context, acceptable overhead)
 		foreach ($paths as $p) {
-			if (!file_exists($p)) continue;
-			if ($do_avif) self::convert_file($p, 'avif');
-			if ($do_webp) self::convert_file($p, 'webp');
+			if (file_exists($p)) self::convert_file($p, $modern);
 		}
 
 		return $metadata;
 	}
 
+	/**
+	 * Builds the resizes for the most-used widths and returns their paths.
+	 * The rest stay with the front end, on the inline budget and the queue.
+	 */
+	private static function pregenerate_paths(string $file): array {
+		$info = @getimagesize($file);
+		if (!$info) return [];
+
+		$raw = (string) self::setting('pregenerate_widths', '');
+		$widths = array_filter(array_map('intval', array_map('trim', explode(',', $raw))));
+		if (!$widths) return [];
+
+		$url = self::path_to_url($file);
+		$paths = [];
+		foreach (self::candidate_widths((int) $info[0], $widths) as $w) {
+			$resized = self::timber_resize($url, $w, null);
+			if ($resized === $url) continue;
+			$path = self::url_to_path($resized);
+			if ($path && file_exists($path)) $paths[] = $path;
+		}
+
+		return $paths;
+	}
+
 	/* ─────────────────────────────────────────────
-     * Admin Page
-     * ───────────────────────────────────────────── */
+	 * Admin Page
+	 * ───────────────────────────────────────────── */
 
 	public static function register_admin_page(): void {
 		add_options_page('Timber AVIF', 'Timber AVIF', 'manage_options', 'timber-avif-settings', [__CLASS__, 'render_admin_page']);
@@ -873,7 +1163,7 @@ class TimberAVIF {
 	public static function admin_notice(): void {
 		if (self::detect_capabilities('avif') !== 'none') return;
 		if (!current_user_can('manage_options')) return;
-		echo '<div class="notice notice-warning is-dismissible"><p><strong>Timber AVIF:</strong> No AVIF support detected. Images will fall back to WebP/original.</p></div>';
+		echo '<div class="notice notice-warning is-dismissible"><p><strong>Timber AVIF:</strong> ' . esc_html__('this server cannot generate AVIF. Images are served as WebP or in their original format.', 'timber-avif') . '</p></div>';
 	}
 
 	public static function render_admin_page(): void {
@@ -884,11 +1174,12 @@ class TimberAVIF {
 		$base_url = admin_url('options-general.php?page=timber-avif-settings');
 		$avif_method = self::detect_capabilities('avif');
 		$webp_method = self::detect_capabilities('webp');
-		$method_labels = ['gd' => 'GD Library', 'imagick' => 'ImageMagick', 'exec' => 'CLI (magick)', 'none' => 'Not available'];
+		$method_labels = ['gd' => 'GD', 'imagick' => 'ImageMagick', 'exec' => 'ImageMagick CLI', 'none' => __('Not available', 'timber-avif')];
 		$queue_count = count(get_option(self::QUEUE_KEY, []));
+		$log_count   = count(get_option(self::LOG_KEY, []));
 		?>
 		<style>
-			.tavif-wrap{max-width:860px}.tavif-header{display:flex;align-items:center;gap:12px;margin-bottom:4px}.tavif-header h1{margin:0;padding:0;line-height:1.2}.tavif-version{font-size:11px;color:#646970;background:#f0f0f1;padding:2px 8px;border-radius:10px;font-weight:400}.tavif-wrap .nav-tab-wrapper{margin-bottom:0;border-bottom:1px solid #c3c4c7}.tavif-card{background:#fff;border:1px solid #c3c4c7;border-top:0;padding:24px 28px;margin-bottom:20px}.tavif-status{display:grid;gap:12px;margin:16px 0 0}.tavif-status--3col{grid-template-columns:repeat(3,1fr)}.tavif-status+.tavif-status{margin-top:12px}.tavif-status:last-of-type{margin-bottom:20px}.tavif-status-item{background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:16px 18px}.tavif-status-item .label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#646970;margin-bottom:6px}.tavif-status-item .value{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}.tavif-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:600;line-height:1}.tavif-badge--ok{background:#d1fae5;color:#065f46}.tavif-badge--warn{background:#fef3c7;color:#92400e}.tavif-badge--off{background:#f3f4f6;color:#6b7280}.tavif-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}.tavif-dot--ok{background:#10b981}.tavif-dot--warn{background:#f59e0b}.tavif-dot--off{background:#9ca3af}.tavif-toggle{position:relative;display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none}.tavif-toggle input[type="checkbox"]{position:absolute;opacity:0;width:0;height:0}.tavif-toggle .slider{width:40px;height:22px;background:#d1d5db;border-radius:11px;position:relative;transition:background .2s;flex-shrink:0}.tavif-toggle .slider::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.15)}.tavif-toggle input:checked+.slider{background:#2271b1}.tavif-toggle input:checked+.slider::after{transform:translateX(18px)}.tavif-toggle .toggle-label{font-size:13px}.tavif-range-group{margin-bottom:16px}.tavif-range-group label{display:flex;align-items:center;gap:12px;font-weight:500;font-size:13px}.tavif-range-group input[type="range"]{flex:1;max-width:280px;accent-color:#2271b1;height:6px}.tavif-range-group .range-val{display:inline-block;min-width:36px;text-align:center;font-weight:600;font-size:13px;background:#f0f0f1;padding:3px 10px;border-radius:4px;font-variant-numeric:tabular-nums}.tavif-range-group .range-label{min-width:42px}.tavif-field-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px}.tavif-field-row label{display:flex;align-items:center;gap:6px;font-size:13px}.tavif-field-row input[type="number"]{width:90px}.tavif-field-row input[type="text"].regular-text{max-width:320px}.tavif-section{margin-bottom:28px}.tavif-section:last-child{margin-bottom:0}.tavif-section h3{font-size:13px;font-weight:600;color:#1d2327;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;text-transform:uppercase;letter-spacing:.3px}.tavif-tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.tavif-tool-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:22px;display:flex;flex-direction:column}.tavif-tool-card h3{margin:0 0 8px;font-size:14px;color:#1d2327}.tavif-tool-card p{color:#6b7280;font-size:13px;margin:0 0 18px;line-height:1.5;flex:1}.tavif-tool-card .button{align-self:flex-start}.tavif-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}.tavif-stat-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:18px;text-align:center}.tavif-stat-card .stat-value{font-size:28px;font-weight:700;color:#1d2327;line-height:1.2;font-variant-numeric:tabular-nums}.tavif-stat-card .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-top:4px}.tavif-stat-card .stat-sub{font-size:12px;color:#9ca3af;margin-top:2px}.tavif-stat-card--highlight{background:#eff6ff;border-color:#bfdbfe}.tavif-stat-card--highlight .stat-value{color:#1d4ed8}.tavif-stat-card--green{background:#ecfdf5;border-color:#a7f3d0}.tavif-stat-card--green .stat-value{color:#065f46}.tavif-progress{margin-bottom:24px}.tavif-progress h3{font-size:13px;font-weight:600;margin:0 0 12px;color:#1d2327}.tavif-progress-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:13px}.tavif-progress-row .bar-label{min-width:48px;font-weight:500}.tavif-progress-row .bar-wrap{flex:1;height:24px;background:#f3f4f6;border-radius:4px;overflow:hidden;position:relative}.tavif-progress-row .bar-fill{height:100%;border-radius:4px;transition:width .3s;min-width:2px}.tavif-progress-row .bar-fill--avif{background:linear-gradient(90deg,#6366f1,#818cf8)}.tavif-progress-row .bar-fill--webp{background:linear-gradient(90deg,#2563eb,#60a5fa)}.tavif-progress-row .bar-text{font-size:12px;color:#6b7280;min-width:80px;text-align:right}
+			.tavif-wrap{max-width:860px}.tavif-header{display:flex;align-items:center;gap:12px;margin-bottom:4px}.tavif-header h1{margin:0;padding:0;line-height:1.2}.tavif-version{font-size:11px;color:#646970;background:#f0f0f1;padding:2px 8px;border-radius:10px;font-weight:400}.tavif-wrap .nav-tab-wrapper{margin-bottom:0;border-bottom:1px solid #c3c4c7}.tavif-card{background:#fff;border:1px solid #c3c4c7;border-top:0;padding:24px 28px;margin-bottom:20px}.tavif-status+.tavif-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:600;line-height:1}.tavif-badge--ok{background:#d1fae5;color:#065f46}.tavif-badge--warn{background:#fef3c7;color:#92400e}.tavif-badge--off{background:#f3f4f6;color:#6b7280}.tavif-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}.tavif-dot--ok{background:#10b981}.tavif-dot--warn{background:#f59e0b}.tavif-dot--off{background:#9ca3af}.tavif-toggle{position:relative;display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none}.tavif-toggle input[type="checkbox"]{position:absolute;opacity:0;width:0;height:0}.tavif-toggle .slider{width:40px;height:22px;background:#d1d5db;border-radius:11px;position:relative;transition:background .2s;flex-shrink:0}.tavif-toggle .slider::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.15)}.tavif-toggle input:checked+.slider{background:#2271b1}.tavif-toggle input:checked+.slider::after{transform:translateX(18px)}.tavif-toggle .toggle-label{font-size:13px}.tavif-range-group{margin-bottom:16px}.tavif-range-group label{display:flex;align-items:center;gap:12px;font-weight:500;font-size:13px}.tavif-range-group input[type="range"]{flex:1;max-width:280px;accent-color:#2271b1;height:6px}.tavif-range-group .range-val{display:inline-block;min-width:36px;text-align:center;font-weight:600;font-size:13px;background:#f0f0f1;padding:3px 10px;border-radius:4px;font-variant-numeric:tabular-nums}.tavif-range-group .range-label{min-width:42px}.tavif-field-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px}.tavif-field-row label{display:flex;align-items:center;gap:6px;font-size:13px}.tavif-field-row input[type="number"]{width:90px}.tavif-field-row input[type="text"].regular-text{max-width:320px}.tavif-section{margin-bottom:28px}.tavif-section:last-child{margin-bottom:0}.tavif-section h3{font-size:13px;font-weight:600;color:#1d2327;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;text-transform:uppercase;letter-spacing:.3px}.tavif-tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.tavif-tool-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:22px;display:flex;flex-direction:column}.tavif-tool-card h3{margin:0 0 8px;font-size:14px;color:#1d2327}.tavif-tool-card p{color:#6b7280;font-size:13px;margin:0 0 18px;line-height:1.5;flex:1}.tavif-tool-card .button{align-self:flex-start}.tavif-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}.tavif-stat-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:18px;text-align:center}.tavif-stat-card .stat-value{font-size:28px;font-weight:700;color:#1d2327;line-height:1.2;font-variant-numeric:tabular-nums}.tavif-stat-card .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-top:4px}.tavif-stat-card .stat-sub{font-size:12px;color:#9ca3af;margin-top:2px}.tavif-stat-card--highlight{background:#eff6ff;border-color:#bfdbfe}.tavif-stat-card--highlight .stat-value{color:#1d4ed8}.tavif-stat-card--green{background:#ecfdf5;border-color:#a7f3d0}.tavif-stat-card--green .stat-value{color:#065f46}
 			.tavif-badge--fail{background:#fee2e2;color:#991b1b}
 			/* Log filters */
 			.tavif-log-filters{display:flex;gap:4px;flex-wrap:wrap}
@@ -908,6 +1199,39 @@ class TimberAVIF {
 			.tavif-log-reason{color:#6b7280;font-size:12px}
 			.tavif-log-row--error td{background:#fef2f2}
 			.tavif-log-row--failed td{background:#fff7ed}
+			/* Card di stato */
+			.tavif-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0 20px}
+			.tavif-card-stat{background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 16px}
+			.tavif-card-stat .label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#646970;margin-bottom:6px}
+			.tavif-card-stat .value{font-size:14px;font-weight:600;color:#1d2327;display:flex;align-items:center;gap:8px}
+			.tavif-card-stat .value .dashicons{font-size:16px;width:16px;height:16px;color:#a7aaad;margin-left:-3px;cursor:help}
+			.tavif-card-stat .value .dashicons:hover{color:#2271b1}
+			.tavif-notice{margin:0 0 20px;padding:10px 14px;background:#fef3c7;border-radius:6px;font-size:13px;color:#92400e;line-height:1.5}
+			/* Blocchi */
+			.tavif-block{padding-bottom:24px;margin-bottom:24px;border-bottom:1px solid #f0f0f1}
+			.tavif-block:last-of-type{border-bottom:0;margin-bottom:8px}
+			.tavif-block h3{margin:0 0 4px;font-size:15px;font-weight:600;color:#1d2327;border:0;padding:0;text-transform:none;letter-spacing:0}
+			.tavif-block-intro{margin:0 0 18px;font-size:13px;line-height:1.6;color:#646970;max-width:64ch}
+			.tavif-block h3+.tavif-field{margin-top:18px}
+			/* Campi */
+			.tavif-field{display:grid;grid-template-columns:130px 1fr;gap:16px;align-items:start;margin-bottom:16px}
+			.tavif-field:last-child{margin-bottom:0}
+			.tavif-field.is-muted{opacity:.5}
+			.tavif-field-label{font-size:13px;font-weight:600;color:#1d2327;padding-top:5px}
+			.tavif-field-input input[type=number]{width:92px}
+			.tavif-hint{margin:6px 0 0;font-size:12px;line-height:1.55;color:#787c82;max-width:60ch}
+			.tavif-hint--block{margin-top:14px;padding-top:14px;border-top:1px solid #f0f0f1;max-width:none}
+			.tavif-field .tavif-toggle{margin-top:10px}
+			.tavif-range{display:flex;align-items:center;gap:12px}
+			.tavif-range input[type=range]{flex:1;max-width:280px;accent-color:#2271b1;height:6px}
+			.tavif-range .range-val{min-width:38px;text-align:center;font-weight:600;font-size:13px;background:#f0f0f1;padding:3px 10px;border-radius:4px;font-variant-numeric:tabular-nums}
+			/* Chip delle larghezze */
+			.tavif-chips{display:flex;flex-wrap:wrap;gap:6px}
+			.tavif-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid #dcdcde;border-radius:20px;font-size:13px;cursor:pointer;background:#fff;color:#646970;font-variant-numeric:tabular-nums;transition:all .12s;user-select:none}
+			.tavif-chip:hover{border-color:#8c8f94}
+			.tavif-chip input{margin:0;width:14px;height:14px}
+			.tavif-chip.is-on{background:#f0f6fc;border-color:#2271b1;color:#1d2327;font-weight:600}
+			@media (max-width:782px){.tavif-field{grid-template-columns:1fr;gap:6px}.tavif-field-label{padding-top:0}}
 		</style>
 
 		<div class="wrap tavif-wrap">
@@ -916,60 +1240,42 @@ class TimberAVIF {
 				<span class="tavif-version">v<?php echo self::VERSION; ?></span>
 			</div>
 
-			<div class="tavif-status tavif-status--3col">
-				<div class="tavif-status-item">
-					<div class="label">AVIF Engine</div>
-					<div class="value">
-						<span class="tavif-dot tavif-dot--<?php echo $avif_method !== 'none' ? 'ok' : 'warn'; ?>"></span>
-						<?php echo esc_html($method_labels[$avif_method] ?? 'Unknown'); ?>
+			<?php
+			$modern   = self::modern_format();
+			$widths   = self::canonical_widths();
+			$pregen   = array_filter(array_map('intval', array_map('trim', explode(',', (string) ($settings['pregenerate_widths'] ?? '')))));
+			$cron_off = defined('DISABLE_WP_CRON') && DISABLE_WP_CRON;
+			$cards = [
+				[__('Served format', 'timber-avif'), $modern ? strtoupper($modern) : __('Original', 'timber-avif'), $modern ? 'ok' : 'off'],
+				[__('Engine', 'timber-avif'), $modern ? self::engine_label(self::detect_capabilities($modern)) : '—', $modern ? 'ok' : 'off'],
+				[__('Quality', 'timber-avif'), $modern ? $settings[$modern . '_quality'] . ' · JPEG ' . ($settings['jpeg_quality'] ?? '—') : 'JPEG ' . ($settings['jpeg_quality'] ?? '—'), 'ok'],
+				[__('Widths', 'timber-avif'), count($widths) . (!empty($settings['pregenerate_breakpoints']) && $pregen ? ' / ' . count($pregen) : ''), 'ok',
+					!empty($settings['pregenerate_breakpoints']) && $pregen
+						? sprintf(__('%1$d defined, %2$d built on upload', 'timber-avif'), count($widths), count($pregen))
+						: sprintf(__('%d defined, built on first request', 'timber-avif'), count($widths))],
+				[__('Queue', 'timber-avif'), $queue_count ? sprintf(_n('%d pending', '%d pending', $queue_count, 'timber-avif'), $queue_count) : __('Empty', 'timber-avif'), $queue_count ? 'warn' : 'ok'],
+			];
+			?>
+			<div class="tavif-cards">
+				<?php foreach ($cards as $card) : list($label, $value, $state) = $card; $tip = $card[3] ?? ''; ?>
+					<div class="tavif-card-stat">
+						<div class="label"><?php echo esc_html($label); ?></div>
+						<div class="value">
+							<span class="tavif-dot tavif-dot--<?php echo esc_attr($state); ?>"></span><?php echo esc_html($value); ?>
+							<?php if ($tip) : ?><span class="dashicons dashicons-info-outline" title="<?php echo esc_attr($tip); ?>"></span><?php endif; ?>
+						</div>
 					</div>
-				</div>
-				<div class="tavif-status-item">
-					<div class="label">WebP Engine</div>
-					<div class="value">
-						<span class="tavif-dot tavif-dot--<?php echo $webp_method !== 'none' ? 'ok' : 'warn'; ?>"></span>
-						<?php echo esc_html($method_labels[$webp_method] ?? 'Unknown'); ?>
-					</div>
-				</div>
-				<div class="tavif-status-item">
-					<div class="label">Auto-convert</div>
-					<div class="value">
-						<?php
-						$fmts = [];
-						if ($settings['generate_avif_uploads'] && $avif_method !== 'none') $fmts[] = 'AVIF';
-						if ($settings['generate_webp_uploads'] && $webp_method !== 'none') $fmts[] = 'WebP';
-						echo $fmts ? '<span class="tavif-badge tavif-badge--ok">' . esc_html(implode(' + ', $fmts)) . '</span>' : '<span class="tavif-badge tavif-badge--off">Off</span>';
-						?>
-					</div>
-				</div>
+				<?php endforeach; ?>
 			</div>
-			<div class="tavif-status tavif-status--3col">
-				<div class="tavif-status-item">
-					<div class="label">Quality</div>
-					<div class="value">AVIF <?php echo esc_html($settings['avif_quality']); ?> &middot; WebP <?php echo esc_html($settings['webp_quality']); ?></div>
-				</div>
-				<div class="tavif-status-item">
-					<div class="label">Inline budget</div>
-					<div class="value"><?php echo esc_html($settings['max_inline_conversions'] ?? self::MAX_INLINE_CONVERSIONS); ?> per request</div>
-				</div>
-				<div class="tavif-status-item">
-					<div class="label">Queue</div>
-					<div class="value">
-						<?php if ($queue_count > 0): ?>
-							<span class="tavif-badge tavif-badge--warn"><?php echo esc_html($queue_count); ?> pending</span>
-						<?php else: ?>
-							<span class="tavif-badge tavif-badge--ok">Empty</span>
-						<?php endif; ?>
-					</div>
-				</div>
-			</div>
+			<?php if ($queue_count && $cron_off) : ?>
+				<p class="tavif-notice"><?php esc_html_e('Queued images are converted a few at a time while you work in the admin.', 'timber-avif'); ?></p>
+			<?php endif; ?>
 
-			<?php $log_count = count(get_option(self::LOG_KEY, [])); ?>
 			<h2 class="nav-tab-wrapper">
-				<a href="<?php echo esc_url(add_query_arg('tab', 'settings', $base_url)); ?>" class="nav-tab <?php echo $tab === 'settings' ? 'nav-tab-active' : ''; ?>">Settings</a>
-				<a href="<?php echo esc_url(add_query_arg('tab', 'tools', $base_url)); ?>" class="nav-tab <?php echo $tab === 'tools' ? 'nav-tab-active' : ''; ?>">Tools</a>
-				<a href="<?php echo esc_url(add_query_arg('tab', 'statistics', $base_url)); ?>" class="nav-tab <?php echo $tab === 'statistics' ? 'nav-tab-active' : ''; ?>">Statistics</a>
-				<a href="<?php echo esc_url(add_query_arg('tab', 'logs', $base_url)); ?>" class="nav-tab <?php echo $tab === 'logs' ? 'nav-tab-active' : ''; ?>">Logs<?php if ($log_count > 0) echo ' <span class="count">(' . esc_html($log_count) . ')</span>'; ?></a>
+				<a href="<?php echo esc_url(add_query_arg('tab', 'settings', $base_url)); ?>" class="nav-tab <?php echo $tab === 'settings' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Settings', 'timber-avif'); ?></a>
+				<a href="<?php echo esc_url(add_query_arg('tab', 'tools', $base_url)); ?>" class="nav-tab <?php echo $tab === 'tools' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Tools', 'timber-avif'); ?></a>
+				<a href="<?php echo esc_url(add_query_arg('tab', 'statistics', $base_url)); ?>" class="nav-tab <?php echo $tab === 'statistics' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Statistics', 'timber-avif'); ?></a>
+				<a href="<?php echo esc_url(add_query_arg('tab', 'logs', $base_url)); ?>" class="nav-tab <?php echo $tab === 'logs' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Log', 'timber-avif'); ?><?php if ($log_count > 0) echo ' <span class="count">(' . esc_html($log_count) . ')</span>'; ?></a>
 			</h2>
 
 			<div class="tavif-card">
@@ -989,86 +1295,167 @@ class TimberAVIF {
 
 	private static function render_settings_tab(string $avif_method, string $webp_method): void {
 		$s = self::$settings;
+		$modern = self::modern_format();
 		?>
-		<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+		<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="tavif-card">
 			<?php wp_nonce_field('timber_avif_settings'); ?>
 			<input type="hidden" name="action" value="timber_avif_tools" />
 			<input type="hidden" name="subaction" value="save_settings" />
 			<input type="hidden" name="tab" value="settings" />
 
-			<div class="tavif-section">
-				<h3>Generation</h3>
-				<div class="tavif-field-row">
-					<label class="tavif-toggle">
-						<input type="hidden" name="generate_avif_uploads" value="0" />
-						<input type="checkbox" name="generate_avif_uploads" value="1" <?php checked($s['generate_avif_uploads']); ?> />
-						<span class="slider"></span>
-						<span class="toggle-label">Generate AVIF on upload <?php if ($avif_method === 'none') echo '<span class="tavif-badge tavif-badge--warn" style="margin-left:6px;">No engine</span>'; ?></span>
-					</label>
+			<div class="tavif-block">
+				<h3><?php esc_html_e('Format and quality', 'timber-avif'); ?></h3>
+
+				<div class="tavif-field">
+					<label class="tavif-field-label" for="tavif-format"><?php esc_html_e('Format', 'timber-avif'); ?></label>
+					<div class="tavif-field-input">
+						<select name="format_mode" id="tavif-format">
+							<?php foreach (['auto' => __('Auto', 'timber-avif'), 'avif' => 'AVIF', 'webp' => 'WebP', 'off' => __('None', 'timber-avif')] as $k => $label) : ?>
+								<option value="<?php echo esc_attr($k); ?>" <?php selected($s['format_mode'] ?? 'auto', $k); ?>><?php echo esc_html($label); ?></option>
+							<?php endforeach; ?>
+						</select>
+						<p class="tavif-hint"><?php esc_html_e('Served instead of the original, which stays as a fallback.', 'timber-avif'); ?></p>
+					</div>
 				</div>
-				<div class="tavif-field-row">
-					<label class="tavif-toggle">
-						<input type="hidden" name="generate_webp_uploads" value="0" />
-						<input type="checkbox" name="generate_webp_uploads" value="1" <?php checked($s['generate_webp_uploads']); ?> />
-						<span class="slider"></span>
-						<span class="toggle-label">Generate WebP on upload <?php if ($webp_method === 'none') echo '<span class="tavif-badge tavif-badge--warn" style="margin-left:6px;">No engine</span>'; ?></span>
-					</label>
-				</div>
+
+				<?php
+				$ranges = [
+					'avif_quality' => ['AVIF', 1],
+					'webp_quality' => ['WebP', 1],
+					'jpeg_quality' => ['JPEG', 60],
+				];
+				foreach ($ranges as $key => [$label, $min]) :
+					$val = $s[$key] ?? 80;
+					$muted = $modern && $key !== 'jpeg_quality' && $key !== $modern . '_quality'; ?>
+					<div class="tavif-field<?php echo $muted ? ' is-muted' : ''; ?>">
+						<label class="tavif-field-label" for="tavif-<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></label>
+						<div class="tavif-field-input">
+							<div class="tavif-range">
+								<input type="range" id="tavif-<?php echo esc_attr($key); ?>" name="<?php echo esc_attr($key); ?>" min="<?php echo (int) $min; ?>" max="100" value="<?php echo esc_attr($val); ?>"
+									oninput="this.closest('.tavif-range').querySelector('.range-val').textContent=this.value" />
+								<span class="range-val"><?php echo esc_html($val); ?></span>
+							</div>
+						</div>
+					</div>
+				<?php endforeach; ?>
+				<p class="tavif-hint tavif-hint--block"><?php esc_html_e('Quality scales are not comparable across formats: AVIF 75 matches JPEG 95.', 'timber-avif'); ?></p>
 			</div>
 
-			<div class="tavif-section">
-				<h3>Quality</h3>
-				<div class="tavif-range-group">
-					<label><span class="range-label">AVIF</span><input type="range" name="avif_quality" min="1" max="100" value="<?php echo esc_attr($s['avif_quality']); ?>" oninput="this.closest('label').querySelector('.range-val').textContent=this.value" /><span class="range-val"><?php echo esc_html($s['avif_quality']); ?></span></label>
-				</div>
-				<div class="tavif-range-group">
-					<label><span class="range-label">WebP</span><input type="range" name="webp_quality" min="1" max="100" value="<?php echo esc_attr($s['webp_quality']); ?>" oninput="this.closest('label').querySelector('.range-val').textContent=this.value" /><span class="range-val"><?php echo esc_html($s['webp_quality']); ?></span></label>
-				</div>
-			</div>
+			<div class="tavif-block">
+				<h3><?php esc_html_e('Widths', 'timber-avif'); ?></h3>
+				<p class="tavif-block-intro"><?php esc_html_e('The sizes every image is generated in. The browser picks the one that fits the screen.', 'timber-avif'); ?></p>
 
-			<div class="tavif-section">
-				<h3>Performance</h3>
-				<div class="tavif-field-row">
-					<label>Max inline conversions per request <input type="number" name="max_inline_conversions" value="<?php echo esc_attr($s['max_inline_conversions'] ?? self::MAX_INLINE_CONVERSIONS); ?>" min="0" max="50" step="1" /></label>
+				<div class="tavif-field">
+					<label class="tavif-field-label" for="tavif-widths"><?php esc_html_e('Sizes', 'timber-avif'); ?></label>
+					<div class="tavif-field-input">
+						<input type="text" id="tavif-widths" name="breakpoint_widths" value="<?php echo esc_attr($s['breakpoint_widths']); ?>" class="regular-text" />
+						<p class="tavif-hint"><?php esc_html_e('Comma-separated. Each size is one more file per image.', 'timber-avif'); ?></p>
+					</div>
 				</div>
-				<p class="description" style="margin-top:-8px;">Images beyond this limit are converted in the background. Set to 0 to disable inline conversion (background-only). Higher = faster warm-up, slower first loads.</p>
-			</div>
 
-			<div class="tavif-section">
-				<h3>Size Limits</h3>
-				<div class="tavif-field-row">
-					<label>Max dimension (px) <input type="number" name="max_dimension" value="<?php echo esc_attr($s['max_dimension']); ?>" min="512" step="1" /></label>
-					<label>Max file size (MB) <input type="number" name="max_file_size" value="<?php echo esc_attr($s['max_file_size']); ?>" min="1" step="1" /></label>
-				</div>
-				<div class="tavif-field-row">
-					<label class="tavif-toggle">
-						<input type="checkbox" name="only_if_smaller" value="1" <?php checked($s['only_if_smaller']); ?> />
-						<span class="slider"></span>
-						<span class="toggle-label">Only keep converted file if smaller than original</span>
-					</label>
-				</div>
-			</div>
-
-			<div class="tavif-section">
-				<h3>Responsive Breakpoints</h3>
-				<div class="tavif-field-row">
-					<label class="tavif-toggle">
-						<input type="checkbox" name="pregenerate_breakpoints" value="1" <?php checked($s['pregenerate_breakpoints']); ?> />
-						<span class="slider"></span>
-						<span class="toggle-label">Pre-generate breakpoint variants on upload</span>
-					</label>
-				</div>
-				<div class="tavif-field-row" style="margin-top:4px;">
-					<div>
-						<input type="text" name="breakpoint_widths" value="<?php echo esc_attr($s['breakpoint_widths']); ?>" class="regular-text" />
-						<p class="description">Comma-separated widths (px).</p>
+				<div class="tavif-field">
+					<label class="tavif-field-label"><?php esc_html_e('On upload', 'timber-avif'); ?></label>
+					<div class="tavif-field-input">
+						<input type="hidden" name="pregenerate_widths" id="tavif-pregen" value="<?php echo esc_attr($s['pregenerate_widths'] ?? ''); ?>" />
+						<div class="tavif-chips" id="tavif-chips"></div>
+						<p class="tavif-hint"><?php esc_html_e('Ticked sizes are built right away. The rest on the first visit to a page that uses them.', 'timber-avif'); ?></p>
+						<label class="tavif-toggle">
+							<input type="hidden" name="pregenerate_breakpoints" value="0" />
+							<input type="checkbox" name="pregenerate_breakpoints" value="1" <?php checked($s['pregenerate_breakpoints']); ?> />
+							<span class="slider"></span>
+							<span class="toggle-label"><?php esc_html_e('Enabled', 'timber-avif'); ?></span>
+						</label>
 					</div>
 				</div>
 			</div>
 
-			<?php submit_button('Save settings'); ?>
+			<div class="tavif-block">
+				<h3><?php esc_html_e('Limits', 'timber-avif'); ?></h3>
+
+				<div class="tavif-field">
+					<label class="tavif-field-label" for="tavif-upload"><?php esc_html_e('Upload', 'timber-avif'); ?></label>
+					<div class="tavif-field-input">
+						<input type="number" id="tavif-upload" name="max_upload_dimension" value="<?php echo esc_attr($s['max_upload_dimension'] ?? 2560); ?>" min="1024" step="1" /> px
+						<p class="tavif-hint"><?php esc_html_e('Wider images are scaled down to this size on arrival.', 'timber-avif'); ?></p>
+					</div>
+				</div>
+
+				<div class="tavif-field">
+					<label class="tavif-field-label" for="tavif-maxdim"><?php esc_html_e('Conversion', 'timber-avif'); ?></label>
+					<div class="tavif-field-input">
+						<input type="number" id="tavif-maxdim" name="max_dimension" value="<?php echo esc_attr($s['max_dimension']); ?>" min="512" step="1" /> px
+						<input type="number" name="max_file_size" value="<?php echo esc_attr($s['max_file_size']); ?>" min="1" step="1" /> MB
+						<p class="tavif-hint"><?php esc_html_e('Past either value the image is left as it is, to avoid exhausting server memory. This also covers files already in the library, which can exceed the upload limit.', 'timber-avif'); ?></p>
+					</div>
+				</div>
+
+				<div class="tavif-field">
+					<label class="tavif-field-label" for="tavif-budget"><?php esc_html_e('Per page', 'timber-avif'); ?></label>
+					<div class="tavif-field-input">
+						<input type="number" id="tavif-budget" name="max_inline_conversions" value="<?php echo esc_attr($s['max_inline_conversions'] ?? self::MAX_INLINE_CONVERSIONS); ?>" min="0" max="50" step="1" /> <?php esc_html_e('images', 'timber-avif'); ?>
+						<p class="tavif-hint"><?php esc_html_e('How many to convert while the visitor waits. The rest continue in the background.', 'timber-avif'); ?></p>
+					</div>
+				</div>
+
+				<div class="tavif-field">
+					<label class="tavif-field-label"><?php esc_html_e('Discard', 'timber-avif'); ?></label>
+					<div class="tavif-field-input">
+						<label class="tavif-toggle">
+							<input type="hidden" name="only_if_smaller" value="0" />
+							<input type="checkbox" name="only_if_smaller" value="1" <?php checked($s['only_if_smaller']); ?> />
+							<span class="slider"></span>
+							<span class="toggle-label"><?php esc_html_e('Keep the converted file only if it weighs less than the original', 'timber-avif'); ?></span>
+						</label>
+					</div>
+				</div>
+			</div>
+
+			<?php submit_button(__('Save', 'timber-avif')); ?>
 		</form>
+
+		<script>
+		(function () {
+			var widths = document.getElementById('tavif-widths'),
+			    chips  = document.getElementById('tavif-chips'),
+			    store  = document.getElementById('tavif-pregen');
+			if (!widths || !chips || !store) return;
+
+			function selected() {
+				return store.value.split(',').map(function (v) { return parseInt(v, 10); }).filter(Boolean);
+			}
+
+			// Le misure da pregenerare sono un sottoinsieme di quelle dichiarate sopra: qui si spuntano invece di riscriverle.
+			function draw() {
+				var on = selected();
+				chips.innerHTML = '';
+				widths.value.split(',').map(function (v) { return parseInt(v, 10); }).filter(Boolean).forEach(function (w) {
+					var label = document.createElement('label');
+					label.className = 'tavif-chip' + (on.indexOf(w) > -1 ? ' is-on' : '');
+					var box = document.createElement('input');
+					box.type = 'checkbox';
+					box.checked = on.indexOf(w) > -1;
+					box.addEventListener('change', function () {
+						var next = selected().filter(function (v) { return v !== w; });
+						if (box.checked) next.push(w);
+						next.sort(function (a, b) { return a - b; });
+						store.value = next.join(',');
+						draw();
+					});
+					label.appendChild(box);
+					label.appendChild(document.createTextNode(w));
+					chips.appendChild(label);
+				});
+			}
+
+			widths.addEventListener('input', draw);
+			draw();
+		})();
+		</script>
 		<?php
+	}
+
+	private static function engine_label(string $method): string {
+		return ['gd' => 'GD', 'imagick' => 'ImageMagick', 'exec' => 'ImageMagick CLI', 'none' => __('Not available', 'timber-avif')][$method] ?? $method;
 	}
 
 	private static function render_tools_tab(): void {
@@ -1076,9 +1463,9 @@ class TimberAVIF {
 		?>
 		<div class="tavif-tools-grid">
 			<div class="tavif-tool-card">
-				<h3>Bulk Convert</h3>
-				<p>Process all images in the media library. Already-converted images are skipped.</p>
-				<button type="button" id="tavif-bulk-start" class="button button-primary">Convert all media</button>
+				<h3><?php esc_html_e('Convert everything', 'timber-avif'); ?></h3>
+				<p><?php esc_html_e('Generate the modern format for every image in the library. Already converted ones are skipped.', 'timber-avif'); ?></p>
+				<button type="button" id="tavif-bulk-start" class="button button-primary"><?php esc_html_e('Start', 'timber-avif'); ?></button>
 				<div id="tavif-bulk-progress" style="display:none;margin-top:14px;">
 					<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
 						<div style="flex:1;height:22px;background:#f3f4f6;border-radius:4px;overflow:hidden;">
@@ -1090,31 +1477,31 @@ class TimberAVIF {
 				</div>
 			</div>
 			<div class="tavif-tool-card">
-				<h3>Purge Conversions</h3>
-				<p>Delete all generated AVIF and WebP files. Originals are never touched.</p>
+				<h3><?php esc_html_e('Delete conversions', 'timber-avif'); ?></h3>
+				<p><?php esc_html_e('Deletes every generated AVIF and WebP file. Originals are untouched and files rebuild on first visit. Use it after a quality change, to realign the library.', 'timber-avif'); ?></p>
 				<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
 					<?php wp_nonce_field('timber_avif_tools'); ?>
 					<input type="hidden" name="action" value="timber_avif_tools" />
 					<input type="hidden" name="subaction" value="purge_conversions" />
 					<input type="hidden" name="tab" value="tools" />
-					<button type="submit" class="button" style="color:#b91c1c;" onclick="return confirm('Delete all generated AVIF and WebP files?');">Purge all conversions</button>
+					<button type="submit" class="button" style="color:#b91c1c;" onclick="return confirm('<?php echo esc_js(__('Delete every generated AVIF and WebP file?', 'timber-avif')); ?>');"><?php esc_html_e('Delete', 'timber-avif'); ?></button>
 				</form>
 			</div>
 			<div class="tavif-tool-card">
-				<h3>Clear Caches</h3>
-				<p>Flush capability cache and re-detect conversion engines.</p>
+				<h3><?php esc_html_e('Clear cache', 'timber-avif'); ?></h3>
+				<p><?php esc_html_e('Detect the conversion engines available on this server again, and clear the memory of failed attempts.', 'timber-avif'); ?></p>
 				<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
 					<?php wp_nonce_field('timber_avif_tools'); ?>
 					<input type="hidden" name="action" value="timber_avif_tools" />
 					<input type="hidden" name="subaction" value="clear_cache" />
 					<input type="hidden" name="tab" value="tools" />
-					<button type="submit" class="button">Flush &amp; re-detect</button>
+					<button type="submit" class="button"><?php esc_html_e('Clear', 'timber-avif'); ?></button>
 				</form>
 			</div>
 			<div class="tavif-tool-card">
-				<h3>Process Queue</h3>
-				<p><span id="tavif-queue-remaining"><?php echo esc_html($queue_count); ?></span> pending background conversions.</p>
-				<button type="button" id="tavif-queue-start" class="button"<?php echo $queue_count === 0 ? ' disabled' : ''; ?>>Process now</button>
+				<h3><?php esc_html_e('Queue', 'timber-avif'); ?></h3>
+				<p><span id="tavif-queue-remaining"><?php echo esc_html($queue_count); ?></span> <?php esc_html_e('images waiting to be converted.', 'timber-avif'); ?></p>
+				<button type="button" id="tavif-queue-start" class="button"<?php echo $queue_count === 0 ? ' disabled' : ''; ?>><?php esc_html_e('Process now', 'timber-avif'); ?></button>
 				<div id="tavif-queue-progress" style="display:none;margin-top:14px;">
 					<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
 						<div style="flex:1;height:22px;background:#f3f4f6;border-radius:4px;overflow:hidden;">
@@ -1150,7 +1537,7 @@ class TimberAVIF {
 		<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
 			<div class="tavif-log-filters">
 				<?php
-				$labels = ['all' => 'All', 'skipped' => 'Skipped', 'failed' => 'Failed', 'error' => 'Error'];
+				$labels = ['all' => __('All', 'timber-avif'), 'skipped' => __('Skipped', 'timber-avif'), 'failed' => __('Failed', 'timber-avif'), 'error' => __('Errors', 'timber-avif')];
 				foreach ($labels as $key => $label):
 					$count = $status_counts[$key] ?? 0;
 					$active = $filter === $key;
@@ -1164,22 +1551,22 @@ class TimberAVIF {
 				<input type="hidden" name="action" value="timber_avif_tools" />
 				<input type="hidden" name="subaction" value="clear_logs" />
 				<input type="hidden" name="tab" value="logs" />
-				<button type="submit" class="button" style="color:#b91c1c;" onclick="return confirm('Clear all logs?');">Clear logs</button>
+				<button type="submit" class="button" style="color:#b91c1c;" onclick="return confirm('<?php echo esc_js(__('Clear the log?', 'timber-avif')); ?>');"><?php esc_html_e('Clear log', 'timber-avif'); ?></button>
 			</form>
 			<?php endif; ?>
 		</div>
 
 		<?php if (empty($filtered)): ?>
-			<p class="description">No log entries<?php echo $filter !== 'all' ? ' matching this filter' : ''; ?>.</p>
+			<p class="description"><?php esc_html_e('No entries', 'timber-avif'); ?><?php echo $filter !== 'all' ? ' matching this filter' : ''; ?>.</p>
 		<?php else: ?>
 			<table class="tavif-log-table">
 				<thead>
 					<tr>
-						<th style="width:145px;">Time</th>
+						<th style="width:145px;"><?php esc_html_e('Time', 'timber-avif'); ?></th>
 						<th>File</th>
-						<th style="width:60px;">Format</th>
-						<th style="width:80px;">Status</th>
-						<th>Reason</th>
+						<th style="width:60px;"><?php esc_html_e('Format', 'timber-avif'); ?></th>
+						<th style="width:80px;"><?php esc_html_e('Result', 'timber-avif'); ?></th>
+						<th><?php esc_html_e('Reason', 'timber-avif'); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -1203,43 +1590,62 @@ class TimberAVIF {
 					<?php endforeach; ?>
 				</tbody>
 			</table>
-			<p class="description" style="margin-top:12px;">Showing <?php echo count($filtered); ?> of <?php echo count($logs); ?> entries (max <?php echo self::MAX_LOG_ENTRIES; ?> kept). Oldest entries are auto-pruned.</p>
+			<p class="description" style="margin-top:12px;"><?php esc_html_e('Showing', 'timber-avif'); ?> ?php echo count($filtered); ?> of <?php echo count($logs); ?> entries (max <?php echo self::MAX_LOG_ENTRIES; ?> kept). Oldest entries are auto-pruned.</p>
 		<?php endif;
 	}
 
 	private static function render_statistics_tab(): void {
-		$stats = self::get_statistics();
+		$stats  = self::get_statistics();
+		$modern = self::modern_format() ?: 'avif';
+		$other  = $modern === 'avif' ? 'webp' : 'avif';
+
+		$done    = $stats[$modern];
+		$total   = $stats['total'];
+		$pct     = $total > 0 ? round($done / $total * 100) : 0;
+		$size    = $stats[$modern . '_size'];
+		$saved   = $stats['orig_size'] - $size;
+		$savePct = $stats['orig_size'] > 0 ? round($saved / $stats['orig_size'] * 100) : 0;
 		?>
 		<div class="tavif-stats-grid">
 			<div class="tavif-stat-card">
-				<div class="stat-value"><?php echo esc_html($stats['total']); ?></div>
-				<div class="stat-label">Total images</div>
+				<div class="stat-value"><?php echo esc_html($total); ?></div>
+				<div class="stat-label"><?php esc_html_e('Images', 'timber-avif'); ?></div>
 			</div>
 			<div class="tavif-stat-card tavif-stat-card--highlight">
-				<div class="stat-value"><?php echo esc_html($stats['avif']); ?></div>
-				<div class="stat-label">AVIF converted</div>
-				<div class="stat-sub"><?php echo $stats['total'] > 0 ? round($stats['avif'] / $stats['total'] * 100) : 0; ?>%</div>
+				<div class="stat-value"><?php echo esc_html($done); ?></div>
+				<div class="stat-label"><?php printf(esc_html__('Converted to %s', 'timber-avif'), esc_html(strtoupper($modern))); ?></div>
+				<div class="stat-sub"><?php printf(esc_html__('%d%% of the library', 'timber-avif'), (int) $pct); ?></div>
 			</div>
-			<div class="tavif-stat-card tavif-stat-card--highlight">
-				<div class="stat-value"><?php echo esc_html($stats['webp']); ?></div>
-				<div class="stat-label">WebP converted</div>
-				<div class="stat-sub"><?php echo $stats['total'] > 0 ? round($stats['webp'] / $stats['total'] * 100) : 0; ?>%</div>
-			</div>
+			<?php if ($saved > 0) : ?>
+				<div class="tavif-stat-card tavif-stat-card--green">
+					<div class="stat-value"><?php echo self::format_bytes($saved); ?></div>
+					<div class="stat-label"><?php esc_html_e('Saved', 'timber-avif'); ?></div>
+					<div class="stat-sub"><?php printf(esc_html__('%1$d%% of %2$s', 'timber-avif'), (int) $savePct, self::format_bytes($stats['orig_size'])); ?></div>
+				</div>
+			<?php endif; ?>
 		</div>
-		<div class="tavif-progress">
-			<h3>Conversion progress</h3>
-			<?php $ap = $stats['total'] > 0 ? round($stats['avif'] / $stats['total'] * 100) : 0; $wp_ = $stats['total'] > 0 ? round($stats['webp'] / $stats['total'] * 100) : 0; ?>
-			<div class="tavif-progress-row"><span class="bar-label">AVIF</span><div class="bar-wrap"><div class="bar-fill bar-fill--avif" style="width:<?php echo $ap; ?>%"></div></div><span class="bar-text"><?php echo $stats['avif']; ?>/<?php echo $stats['total']; ?></span></div>
-			<div class="tavif-progress-row"><span class="bar-label">WebP</span><div class="bar-wrap"><div class="bar-fill bar-fill--webp" style="width:<?php echo $wp_; ?>%"></div></div><span class="bar-text"><?php echo $stats['webp']; ?>/<?php echo $stats['total']; ?></span></div>
-		</div>
-		<?php if ($stats['orig_size'] > 0): ?>
-		<div class="tavif-stats-grid">
-			<div class="tavif-stat-card"><div class="stat-value"><?php echo self::format_bytes($stats['orig_size']); ?></div><div class="stat-label">Original size</div></div>
-			<?php if ($stats['avif_size'] > 0): ?><div class="tavif-stat-card tavif-stat-card--green"><div class="stat-value"><?php echo self::format_bytes($stats['orig_size'] - $stats['avif_size']); ?></div><div class="stat-label">Saved with AVIF</div><div class="stat-sub"><?php echo round(($stats['orig_size'] - $stats['avif_size']) / $stats['orig_size'] * 100); ?>%</div></div><?php endif; ?>
-			<?php if ($stats['webp_size'] > 0): ?><div class="tavif-stat-card tavif-stat-card--green"><div class="stat-value"><?php echo self::format_bytes($stats['orig_size'] - $stats['webp_size']); ?></div><div class="stat-label">Saved with WebP</div><div class="stat-sub"><?php echo round(($stats['orig_size'] - $stats['webp_size']) / $stats['orig_size'] * 100); ?>%</div></div><?php endif; ?>
-		</div>
+
+		<?php if ($done < $total) : ?>
+			<p class="description" style="margin-bottom:20px;">
+				<?php printf(
+					esc_html__('The %d images left out are those where the modern format would weigh more than the original: it happens on flat graphics and icons, and they are left as they were.', 'timber-avif'),
+					(int) ($total - $done)
+				); ?>
+			</p>
 		<?php endif; ?>
-		<p class="description">Statistics are cached for 5 minutes.</p>
+
+		<?php if ($stats[$other] > 0) : ?>
+			<p class="description">
+				<?php printf(
+					esc_html__('The library also holds %1$d %2$s files (%3$s), generated when a different format was being served. Remove them from Tools &rarr; Delete conversions.', 'timber-avif'),
+					(int) $stats[$other],
+					esc_html(strtoupper($other)),
+					self::format_bytes($stats[$other . '_size'])
+				); ?>
+			</p>
+		<?php endif; ?>
+
+		<p class="description"><?php esc_html_e('Updated every 5 minutes. The count covers original images, not the individual sizes generated from them.', 'timber-avif'); ?></p>
 		<?php
 	}
 
@@ -1272,17 +1678,17 @@ class TimberAVIF {
 	}
 
 	private static function render_admin_notices(): void {
-		if (!empty($_GET['updated']))        echo '<div class="notice notice-success is-dismissible"><p>Settings saved.</p></div>';
-		if (!empty($_GET['converted']))      echo '<div class="notice notice-success is-dismissible"><p>Bulk conversion complete.</p></div>';
-		if (!empty($_GET['cleared']))        echo '<div class="notice notice-success is-dismissible"><p>Caches cleared.</p></div>';
-		if (isset($_GET['purged']))          echo '<div class="notice notice-success is-dismissible"><p>' . intval($_GET['purged']) . ' files deleted.</p></div>';
-		if (!empty($_GET['queue_processed'])) echo '<div class="notice notice-success is-dismissible"><p>Queue processed.</p></div>';
-		if (!empty($_GET['logs_cleared']))   echo '<div class="notice notice-success is-dismissible"><p>Logs cleared.</p></div>';
+		if (!empty($_GET['updated']))        echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Settings saved.', 'timber-avif') . '</p></div>';
+		if (!empty($_GET['converted']))      echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Conversion complete.', 'timber-avif') . '</p></div>';
+		if (!empty($_GET['cleared']))        echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Cache cleared.', 'timber-avif') . '</p></div>';
+		if (isset($_GET['purged']))          echo '<div class="notice notice-success is-dismissible"><p>' . sprintf(esc_html__('%d files deleted.', 'timber-avif'), intval($_GET['purged'])) . '</p></div>';
+		if (!empty($_GET['queue_processed'])) echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Queue processed.', 'timber-avif') . '</p></div>';
+		if (!empty($_GET['logs_cleared']))   echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Log cleared.', 'timber-avif') . '</p></div>';
 	}
 
 	/* ─────────────────────────────────────────────
-     * Admin Handlers
-     * ───────────────────────────────────────────── */
+	 * Admin Handlers
+	 * ───────────────────────────────────────────── */
 
 	public static function handle_admin_post(): void {
 		if (!current_user_can('manage_options')) wp_die('Insufficient permissions');
@@ -1292,16 +1698,19 @@ class TimberAVIF {
 
 		if ($sub === 'save_settings') {
 			check_admin_referer('timber_avif_settings');
-			self::$settings['generate_avif_uploads']  = !empty($_POST['generate_avif_uploads']) && intval($_POST['generate_avif_uploads']) === 1;
-			self::$settings['generate_webp_uploads']  = !empty($_POST['generate_webp_uploads']) && intval($_POST['generate_webp_uploads']) === 1;
 			self::$settings['avif_quality']            = max(1, min(100, intval($_POST['avif_quality'] ?? self::DEFAULT_AVIF_QUALITY)));
 			self::$settings['webp_quality']            = max(1, min(100, intval($_POST['webp_quality'] ?? self::DEFAULT_WEBP_QUALITY)));
+			self::$settings['jpeg_quality']            = max(60, min(100, intval($_POST['jpeg_quality'] ?? self::DEFAULT_JPEG_QUALITY)));
+			self::$settings['max_upload_dimension']    = max(1024, intval($_POST['max_upload_dimension'] ?? 2560));
+			$mode = sanitize_key($_POST['format_mode'] ?? 'auto');
+			self::$settings['format_mode']             = in_array($mode, ['auto', 'avif', 'webp', 'off'], true) ? $mode : 'auto';
 			self::$settings['only_if_smaller']         = !empty($_POST['only_if_smaller']);
 			self::$settings['max_dimension']           = max(512, intval($_POST['max_dimension'] ?? self::MAX_IMAGE_DIMENSION));
 			self::$settings['max_file_size']           = max(1, intval($_POST['max_file_size'] ?? self::MAX_FILE_SIZE_MB));
 			self::$settings['max_inline_conversions']  = max(0, min(50, intval($_POST['max_inline_conversions'] ?? self::MAX_INLINE_CONVERSIONS)));
 			self::$settings['pregenerate_breakpoints'] = !empty($_POST['pregenerate_breakpoints']);
 			self::$settings['breakpoint_widths']       = sanitize_text_field($_POST['breakpoint_widths'] ?? '');
+			self::$settings['pregenerate_widths']      = sanitize_text_field($_POST['pregenerate_widths'] ?? '');
 			update_option(self::OPTION_KEY, self::$settings);
 			wp_safe_redirect(add_query_arg(['updated' => 'true', 'tab' => $tab], admin_url('options-general.php?page=timber-avif-settings')));
 			exit;
@@ -1385,8 +1794,8 @@ class TimberAVIF {
 		$file = get_attached_file($id);
 		if (!$file || !file_exists($file)) return;
 
-		$do_avif = self::setting('generate_avif_uploads');
-		$do_webp = self::setting('generate_webp_uploads');
+		$modern = self::modern_format();
+		if (!$modern) return;
 
 		$paths = [$file];
 		$meta = wp_get_attachment_metadata($id);
@@ -1399,8 +1808,7 @@ class TimberAVIF {
 
 		foreach ($paths as $p) {
 			if (!file_exists($p)) continue;
-			if ($do_avif) self::convert_file($p, 'avif', true);
-			if ($do_webp) self::convert_file($p, 'webp', true);
+			self::convert_file($p, $modern, true);
 		}
 	}
 
@@ -1421,22 +1829,22 @@ class TimberAVIF {
 					var btn=$('#tavif-bulk-start'),wrap=$('#tavif-bulk-progress'),bar=$('#tavif-bulk-bar'),count=$('#tavif-bulk-count'),status=$('#tavif-bulk-status');
 					if(!btn.length)return;
 					btn.on('click',function(){
-						if(running){cancelled=true;btn.prop('disabled',true).text('Stopping\u2026');return;}
+						if(running){cancelled=true;btn.prop('disabled',true).text('<?php echo esc_js(__('Stopping…', 'timber-avif')); ?>');return;}
 						running=true;cancelled=false;
-						btn.text('Cancel').removeClass('button-primary').addClass('button-secondary');
-						wrap.show();bar.css('width','0%');count.text('0 / \u2026');status.text('Starting\u2026');
+						btn.text('<?php echo esc_js(__('Cancel', 'timber-avif')); ?>').removeClass('button-primary').addClass('button-secondary');
+						wrap.show();bar.css('width','0%');count.text('0 / \u2026');status.text('<?php echo esc_js(__('Starting…', 'timber-avif')); ?>');
 						run(0);
 					});
 					function run(offset){
-						if(cancelled){done('Cancelled at '+offset);return;}
+						if(cancelled){done('<?php echo esc_js(__('Cancelled at', 'timber-avif')); ?> '+offset);return;}
 						$.post(url,{action:'timber_avif_bulk_batch',nonce:'" . esc_js($bulk_nonce) . "',offset:offset,batch_size:5},function(r){
 							if(!r.success){done('Error: '+(r.data||'unknown'));return;}
 							var d=r.data,pct=d.total>0?Math.round(d.processed/d.total*100):0;
 							bar.css('width',pct+'%');count.text(d.processed+' / '+d.total);status.text(pct+'%');
-							if(d.done)done('Done! '+d.processed+' images processed.');else run(d.processed);
+							if(d.done)done(d.processed+' <?php echo esc_js(__('images processed.', 'timber-avif')); ?>');else run(d.processed);
 						}).fail(function(){done('Request failed.');});
 					}
-					function done(msg){running=false;cancelled=false;btn.prop('disabled',false).text('Convert all media').removeClass('button-secondary').addClass('button-primary');status.text(msg);bar.css('width','100%');}
+					function done(msg){running=false;cancelled=false;btn.prop('disabled',false).text('<?php echo esc_js(__('Start', 'timber-avif')); ?>').removeClass('button-secondary').addClass('button-primary');status.text(msg);bar.css('width','100%');}
 				})();
 
 				/* ── Process Queue ── */
@@ -1448,8 +1856,8 @@ class TimberAVIF {
 					btn.on('click',function(){
 						if(running||total===0)return;
 						running=true;
-						btn.prop('disabled',true).text('Processing\u2026');
-						wrap.show();bar.css('width','0%');countEl.text('0');status.text('Starting\u2026');
+						btn.prop('disabled',true).text('<?php echo esc_js(__('Processing…', 'timber-avif')); ?>');
+						wrap.show();bar.css('width','0%');countEl.text('0');status.text('Avvio\u2026');
 						var processed=0;
 						run();
 						function run(){
@@ -1460,19 +1868,19 @@ class TimberAVIF {
 								var pct=total>0?Math.min(100,Math.round(processed/total*100)):100;
 								bar.css('width',pct+'%');countEl.text(processed+' / '+total);remaining.text(d.remaining);
 								status.text(d.remaining+' remaining\u2026');
-								if(d.done){done('Done! '+processed+' conversions processed.');}else{run();}
+								if(d.done){done(processed+' <?php echo esc_js(__('conversions complete.', 'timber-avif')); ?>');}else{run();}
 							}).fail(function(){done('Request failed.');});
 						}
 					});
-					function done(msg){running=false;btn.prop('disabled',false).text('Process now');status.text(msg);bar.css('width','100%');remaining.text('0');}
+					function done(msg){running=false;btn.prop('disabled',false).text('<?php echo esc_js(__('Process now', 'timber-avif')); ?>');status.text(msg);bar.css('width','100%');remaining.text('0');}
 				})();
 			});
 		");
 	}
 
 	/* ─────────────────────────────────────────────
-     * Purge & Cache
-     * ───────────────────────────────────────────── */
+	 * Purge & Cache
+	 * ───────────────────────────────────────────── */
 
 	public static function purge_all_conversions(): int {
 		$base_dir = self::upload_dir()['basedir'];
@@ -1515,16 +1923,16 @@ class TimberAVIF {
 	}
 
 	/**
-     * Flush all tavif_fail_* transients so failed/skipped conversions can be retried.
-     */
+	 * Flush all tavif_fail_* transients so failed/skipped conversions can be retried.
+	 */
 	private static function flush_failure_transients(): void {
 		global $wpdb;
 		$wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_tavif_fail_%' OR option_name LIKE '_transient_timeout_tavif_fail_%'");
 	}
 
 	/* ─────────────────────────────────────────────
-     * Media Library Column
-     * ───────────────────────────────────────────── */
+	 * Media Library Column
+	 * ───────────────────────────────────────────── */
 
 	public static function add_media_column(array $columns): array {
 		$new = [];
@@ -1555,8 +1963,8 @@ class TimberAVIF {
 	}
 
 	/* ─────────────────────────────────────────────
-     * Cron / Cleanup
-     * ───────────────────────────────────────────── */
+	 * Cron / Cleanup
+	 * ───────────────────────────────────────────── */
 
 	public static function cleanup_stale_locks(): void {
 		$base = self::upload_dir()['basedir'];
@@ -1577,8 +1985,8 @@ class TimberAVIF {
 	}
 
 	/* ─────────────────────────────────────────────
-     * WP-CLI
-     * ───────────────────────────────────────────── */
+	 * WP-CLI
+	 * ───────────────────────────────────────────── */
 
 	private static function register_cli(): void {
 		\WP_CLI::add_command('timber-avif clear-cache', function () {

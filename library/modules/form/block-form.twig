@@ -22,7 +22,8 @@
 
 		{# Form CF7 #}
 		{% if content.form %}
-			<div class="form mx-auto max-w-5xl"{% if content.typ %} data-typ="{{ content.typ }}"{% endif %}>
+			{# `novalidate`: CF7 valida a ogni `change` e il suo validate() scorre tutti i wrap fino al target, quindi cliccando un consenso in fondo segna errati tutti i campi vuoti sopra. La classe glielo impedisce; la validazione del submit resta #}
+			<div class="form novalidate mx-auto max-w-5xl"{% if content.typ %} data-typ="{{ content.typ }}"{% endif %}>
 				{% apply shortcodes %}
 					[contact-form-7 id="{{ content.form.ID }}" html_id="{{ content.form.post_title|slug }}"]
 				{% endapply %}

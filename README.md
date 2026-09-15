@@ -10,7 +10,7 @@ Opinionata: fa poche scelte, ma le fa in modo esplicito e le documenta.
 - ⚡ **esbuild** — rebuild incrementali, CSS iniettato senza ricaricare la pagina
 - 🧩 **Libreria moduli** — 16 moduli ACF flexible content: 2 attivi, 14 in dispensa da cui copiare
 - 🧱 **Blocchi Gutenberg ACF** — boilerplate opzionale (API v3) renderizzato da Timber
-- 🖼️ **TimberAVIF** — conversione AVIF/WebP on demand con coda in background
+- 🖼️ **Timber AVIF 6.0** — `srcset` a descrittori `w` su larghezze canoniche condivise, generazione on demand con coda in background, admin tradotto
 - 📦 **Script modulari** — moduli ES6 tree-shakeable per i pattern UI ricorrenti
 
 ## 🚀 Avvio rapido
@@ -73,6 +73,7 @@ tuo-tema/
 │   ├── menus.php         # Registrazione menu
 │   ├── setup.php         # Timber Starter e contesto globale
 │   └── twig.php          # Filtri e funzioni Twig
+├── languages/            # .mo/.po/.pot dell'admin di Timber AVIF
 ├── library/              # Dispensa: moduli pronti ma inerti finché non li copi
 ├── templates/            # Template Twig
 ├── devkit.config.json    # Config di build per progetto
@@ -137,10 +138,13 @@ define('GUTENBERG_CUSTOM_BLOCKS_ENABLED', true);
 Documentazione completa in [`blocks/README.md`](blocks/README.md): salvataggio ACF JSON
 per blocco, preview nell'inserter, InnerBlocks, editor styles.
 
-## 🖼️ Immagini (TimberAVIF)
+## 🖼️ Immagini (Timber AVIF 6.0)
 
-`functions/avif.php` converte in AVIF/WebP on demand, con un budget per richiesta e una coda
-in background per l'eccedenza. Filtri Twig:
+`functions/avif.php` genera AVIF/WebP accanto all'originale su un **unico insieme di larghezze
+canoniche** condivise da tutto il tema, così la stessa foto riusa gli stessi file in ogni modulo.
+Le varianti mancanti si costruiscono all'upload per le larghezze più usate, poi on demand con un
+budget per richiesta, poi in coda. Admin e impostazioni in Impostazioni → Timber AVIF; la cartella
+`languages/` in root porta l'admin in italiano (senza, resta in inglese). Filtri Twig:
 
 ```twig
 {{ image|toavif }}              {# AVIF o originale #}
@@ -148,9 +152,23 @@ in background per l'eccedenza. Filtri Twig:
 {{ image|best_src(800, 600) }}  {# AVIF > WebP > originale #}
 ```
 
-La macro `image()` in `templates/partial/macros.twig` costruisce `<picture>` responsive
-(AVIF con fallback WebP, srcset, densità 2x, lazy loading, opzione `atf` per l'above-the-fold).
+La macro `image()` in `templates/partial/macros.twig` costruisce un `<picture>` con `srcset` a
+descrittori `w` e un solo `<source>` per il formato moderno. **`sizes` è la larghezza CSS a cui
+l'immagine viene mostrata, non un elenco di pixel**: si ricava leggendo la griglia attorno alla
+chiamata e deve dire il vero, perché è l'unica cosa su cui il browser sceglie il candidato —
+sovrastimarla fa scaricare byte inutili, sottostimarla dà un'immagine sfocata, e in nessuno dei
+due casi c'è un errore a segnalarlo. `ratio` croppa lato server e serve solo dove il rapporto
+dell'originale è lontano da come viene mostrato: di norma il taglio lo fa `object-cover`.
 Le macro `mp4()` ed `embed()` producono il markup video per vLitejs.
+
+**La qualità non è confrontabile tra codec.** AVIF 75 è già oltre JPEG 95 come resa percepita, e
+portare l'AVIF a 90 triplica il peso per una differenza che sulle foto l'occhio non trova. La
+regola «mai sotto 90», giusta per il JPEG, qui non si trasferisce: i default sono **AVIF 75 ·
+WebP 90 · JPEG 95**, e la qualità JPEG vale per ogni resize che WordPress e Timber generano, non
+solo per gli upload.
+
+Il devkit distribuisce Timber AVIF già integrato. La sorgente è [zenotds/timber-avif](https://github.com/zenotds/timber-avif),
+da cui si prende `avif.php` per integrarlo a mano in un tema esistente.
 
 ## 🌐 Oggetto request
 
@@ -240,7 +258,76 @@ Incluso un config Biome che gestisce la sintassi Tailwind 4.
 
 ## 📝 Changelog
 
-### v7.5 — Build e igiene CSS (corrente)
+### v8.0 — Immagini responsive, difetti a monte, potatura (corrente)
+
+Due mesi e mezzo di uso continuo della 7.5 su un tema di produzione hanno prodotto un elenco di
+difetti del framework e un gruppo di soluzioni che si sono rivelate convenzioni. Questa versione le
+porta a monte. **È una migrazione, non un aggiornamento**: vedi la sezione qui sotto.
+
+**Immagini — Timber AVIF 6.0**
+- 🖼️ La macro `image()` emette un `srcset` a descrittori `w` su **un insieme di larghezze canoniche
+  condiviso da tutto il tema**, invece di un `<source media>` per breakpoint con densità fisse 1x/2x
+- 📉 Misurato sul tema di partenza: 20 ricette `sizes` distinte per 21 chiamate, 98 dimensioni
+  generate, 185 varianti della sola immagine hero. Nessun file riusato fra moduli
+- ⚡ Il difetto non era estetico: **la vecchia macro causava l'avviso PageSpeed che doveva togliere**.
+  Con due soli gradini, un dispositivo a DPR 1,75 è costretto a prendere quello sopra e scarica ~2×
+  i byte che gli servono. Col `w` il browser sceglie il gradino giusto: **−59%** sul caso misurato
+- 🌍 Admin di Timber AVIF tradotto (`languages/` in root, italiano incluso)
+- 🎚️ `jpeg_quality` non è più forzato a 100 (la qualità la governa Timber AVIF, che registra lui
+  quel filtro) e le size intermedie di WordPress si tolgono tutte dal filtro, non da `init`
+
+**Difetti del framework corretti**
+- 💥 Il filtro `unique_id` era applicato a **tutti** gli array ACF invece che a repeater e flexible:
+  **fatal** `offset on string` al primo repeater dentro un `group`
+- 🌐 Opzioni ACF senza fallback sulla lingua di default: con WPML la seconda lingua era **senza
+  logo, senza menu e senza footer** finché non si compilavano le opzioni — non "in inglese", assente
+- ♿ `forms.css` azzerava l'outline dei campi, annullando il `*:focus-visible` globale
+- 🏷️ Gli id di checkbox e radio non portavano lo unit-tag CF7: due form nella stessa pagina
+  collidevano su `privacy`, gli attributi finivano dentro il `value` e tutti i radio di un gruppo
+  condividevano lo stesso id
+- 📐 `.typo-r h1` era senza `font-size` (il reset di Tailwind azzera gli heading): restava a 16px
+- 🧹 Due collection globali costruite su ogni richiesta e usate da nessun template; `editor-styles`
+  non gated su Gutenberg; breadcrumb Yoast con un `</span>` spurio; `icons.css` scritto con `@apply`
+
+**Aggiunte**
+- 🔍 **Ponte Yoast per i moduli**: Yoast analizza `post_content`, che su una pagina a moduli è vuoto.
+  Il testo dei moduli ora arriva al suo motore JS. Sul tema di partenza erano 14 contenuti su 36
+- 📋 `theme_menu_hide_unpublished()`: WP di suo scarta solo il cestino, una bozza resta a menu con
+  un permalink `?page_id=`. Toglie anche i discendenti
+- 🍞 Breadcrumb rimarkuppato in `<ol><li>` **coi filtri di Yoast** + `partial/breadcrumb.css`
+- 🎨 `editor_color_palette()`: fonte unica per i campi ACF e per l'editor classico
+- ✍️ Aspetto dei campi form **per elemento e non per classe**; `.icon-svg`, `.scroll-thin`
+
+**Potatura**
+- ✂️ Via `author.php`, `sidebar.php`, `custom-page.php`, i template commenti, `tease.twig`,
+  `archive-category.twig`, la macro `intro()` e `autoprefixer`
+- ⇥ **Tutto il codebase a tab** (71 file erano a spazi, 40 a tab, 1 misto): un editor che formatta
+  al salvataggio non produce più righe fantasma a ogni commit
+
+**Dipendenze** — chalk 6 (richiede Node 22+), Alpine 3.17, Swiper 14.2, Tailwind 4.3.3, Lenis 1.3.26
+
+### Migrazione da v7.5 a v8.0
+
+Un tema su 7.5 **non si aggiorna, si migra**. Tre cose, in quest'ordine:
+
+1. **La firma di `macros.image()` cambia.** `sizes` era una mappa di larghezze in pixel per
+   breakpoint, ora è una **stringa CSS** che descrive quanto è larga l'immagine a schermo; le
+   altezze spariscono e il crop, se serve davvero, sta in `ratio`. Vanno aggiornate **tutte** le
+   chiamate. Per tradurre una ricetta non si convertono i vecchi numeri: si legge la griglia attorno
+   alla chiamata e si scrive quanto è larga davvero l'immagine. Una `sizes` sbagliata non dà errori —
+   sovrastimarla fa scaricare byte inutili, sottostimarla dà un'immagine sfocata. Le ricette dei
+   moduli di libreria sono in tabella in `library/README.md`.
+   Dopo la migrazione **le vecchie varianti sono orfane**: ogni file `-WxH-c-default.*` a una misura
+   che nessuno chiede più resta su disco. Si cancellano, o si usa Tools → Purge.
+2. **File rimossi**: se il tema include ancora `tease.twig`, `comment.twig`, `comment-form.twig`,
+   `author.twig`, `sidebar.twig`, `page-custom.twig` o la macro `intro()`, vanno sostituiti. Il
+   fallback `{% include ['tease-x.twig', 'tease.twig'] %}` non ha più il secondo termine: ogni
+   post type che compare in archivio porta il suo tease.
+3. **Conversione a tab.** Fatta come commit isolato, così il diff resta leggibile: `git diff -w`
+   deve risultare vuoto. Escludere `acf-json/` (li riscrive ACF a 4 spazi) e `wp-config.php`, che
+   con il symlink del `postinstall` è la root dell'installazione WordPress.
+
+### v7.5 — Build e igiene CSS
 
 Affila le due cose che ogni progetto tocca ogni giorno: il ciclo di build e i fogli di stile.
 

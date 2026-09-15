@@ -31,6 +31,10 @@
 		text-wrap: balance;
 	}
 
+	h1 {
+		font-size: var(--text-h1);
+	}
+
 	h2 {
 		font-size: var(--text-h2);
 	}
@@ -47,6 +51,7 @@
 		font-size: var(--text-h5);
 	}
 
+	* + h1,
 	* + h2,
 	* + h3,
 	* + h4,
@@ -54,6 +59,7 @@
 		margin-top: calc(var(--spacing) * 8);
 	}
 
+	h1:has(+ *),
 	h2:has(+ *),
 	h3:has(+ *),
 	h4:has(+ *),
@@ -105,8 +111,9 @@
 				position: absolute;
 				left: 0;
 				color: var(--color-accent);
-				top: 0.15em;
-				line-height: 1;
+				/* Interlinea uguale a quella del testo e top a 0: il box del glifo è alto come la riga, quindi il suo centro cade dove cade quello del testo. Con `line-height: 1` e un `top` a occhio il bullet resta più alto, e lo scarto cambia a ogni dimensione di font */
+				top: 0;
+				line-height: inherit;
 				width: 1em;
 				text-align: center;
 				font-style: normal;

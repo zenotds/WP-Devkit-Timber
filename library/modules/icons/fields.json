@@ -338,9 +338,9 @@
 				"id": ""
 			},
 			"choices": {
-				"accent": "Badge accent",
-				"white": "Badge bianco",
-				"light": "Badge grigio"
+				"accent": "Accent",
+				"white": "Bianco",
+				"light": "Chiaro"
 			},
 			"default_value": "accent",
 			"return_format": "value",

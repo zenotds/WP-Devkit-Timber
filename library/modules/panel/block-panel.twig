@@ -1,4 +1,5 @@
 {# Modulo Panel — split fullscreen: contenuto sulla gutter + immagine a filo bordo; banda full-bleed esclusa dal ritmo verticale (vedi layout/common.css), sfondi via data-bg #}
+{# sizes: la griglia è full-width senza container — la media è una riga piena sotto lg, metà da lg, due terzi da xl (xl:col-span-2 su 3 colonne) #}
 {% import '/partial/macros.twig' as macros %}
 {% set tag = content.tag|default('h2') %}
 {% set bg = content.bg|default('none') %}
@@ -44,7 +45,7 @@
 		{% if cover %}
 			<div class="media relative aspect-4/3 overflow-clip lg:aspect-auto xl:col-span-2 {{ content.align == 'start' ? 'lg:order-first' }}">
 				{{ macros.image(cover, {
-					sizes: { 'xs': [640, 480], 'sm': [820, 615], 'md': [1080, 810], 'lg': [760, 760], 'xl': [1040, 780], '2xl': [1280, 960] },
+					sizes: '(min-width: 80rem) 67vw, (min-width: 64rem) 50vw, 100vw',
 					pictureClass: 'absolute inset-0 h-full w-full',
 					imgClass: 'h-full w-full object-cover'
 				}) }}

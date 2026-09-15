@@ -1,6 +1,7 @@
 /* Sfondi sezione via data-bg (campo ACF `bg`: none | light | dark). Il padding coincide col ritmo base di .main > * (vedi common.css) — ridichiarato qui per i data-bg fuori dal flusso */
-[data-bg="light"],
-[data-bg="dark"] {
+/* Escluse le bande full-bleed: stando in `overrides` questa regola batte il `padding-block: 0` che common.css dà loro, e su un panel con sfondo l'immagine non arriverebbe più a filo sopra e sotto. Le due liste di esclusioni vanno tenute allineate */
+[data-bg="light"]:not(.page-header, .block-panel),
+[data-bg="dark"]:not(.page-header, .block-panel) {
 	padding-block: var(--section-pad, calc(var(--spacing) * 12));
 }
 

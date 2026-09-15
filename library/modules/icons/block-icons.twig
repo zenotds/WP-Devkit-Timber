@@ -1,4 +1,4 @@
-{# Modulo Icons — griglia o carosello di card icona (FontAwesome) con titolo/testo/bottone, intro e strip CTA opzionali. Dipendenze: FA icons, Swiper (vista carousel), CSS components/icons.css (badge icona) #}
+{# Modulo Icons — griglia o carosello di card icona (FontAwesome) con titolo/testo/bottone, intro e strip CTA opzionali. Dipendenze: FA icons, Swiper (vista carousel). Nessun CSS di componente: l'icona è nuda e il colore arriva da icon_style #}
 {% set tag = content.tag|default('h2') %}
 {% set bg = content.bg|default('none') %}
 {% set view = content.view|default('grid') %}
@@ -50,7 +50,7 @@
 				{% endif %}
 				{% if content.cta_link %}
 					<a class="cta-link group inline-flex shrink-0 items-center gap-2 text-xs font-extrabold tracking-[0.2em] text-current uppercase" href="{{ content.cta_link.url }}" target="{{ content.cta_link.target }}">
-						{{ content.cta_link.title }} <i class="fa fa-arrow-right cta-arrow transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true"></i>
+						{{ content.cta_link.title }} <i class="fa fa-arrow-right cta-arrow text-accent transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true"></i>
 					</a>
 				{% endif %}
 			</div>
@@ -63,7 +63,7 @@
 {% macro card(card, iconStyle, boxed) %}
 	<div class="card flex h-full w-full flex-col items-center gap-3 text-center {{ boxed ? 'surface rounded-xl bg-light p-8' }}">
 		{% if card.icon %}
-			<span class="icon-badge icon-badge--{{ iconStyle }}"><i class="fa {{ card.icon }}" aria-hidden="true"></i></span>
+			<span class="icon text-4xl {{ { 'accent': 'text-accent', 'white': 'text-white', 'light': 'text-light' }[iconStyle] }}"><i class="fa {{ card.icon }}" aria-hidden="true"></i></span>
 		{% endif %}
 		{% if card.title %}
 			<div class="title typo-h text-h5">{{ card.title }}</div>

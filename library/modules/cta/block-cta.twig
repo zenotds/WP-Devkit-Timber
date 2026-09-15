@@ -11,7 +11,7 @@
 			{# Immagine di sfondo: dietro al contenuto, si fonde col colore della banda #}
 			{% if content.image %}
 				{{ macros.image(get_image(content.image), {
-					sizes: { 'xs': [768], 'lg': [1280], '2xl': [1536] },
+					sizes: 'calc(100vw - 3rem)',
 					pictureClass: 'absolute inset-0 -z-1 mix-blend-multiply grayscale',
 					imgClass: 'h-full w-full object-cover'
 				}) }}

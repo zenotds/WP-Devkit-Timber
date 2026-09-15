@@ -46,31 +46,27 @@
 
 							<div class="grid grid-cols-3 gap-x-8 gap-y-8">
 								{% for child in item.children %}
-									{% if child.master_object.status == 'publish' or child.type == 'taxonomy' or child.type == 'post_type_archive' %}
 
-										<div class="mega-col flex flex-col gap-3">
+									<div class="mega-col flex flex-col gap-3">
 
-											<a class="mega-col-title text-sm xl:text-[15px] 2xl:text-lg font-medium text-dark/70 hover:text-accent" href="{{ child.url }}" target="{{ child.target }}" role="menuitem">
-												{{ child.name }}
-											</a>
+										<a class="mega-col-title text-sm xl:text-[15px] 2xl:text-lg font-medium text-dark/70 hover:text-accent" href="{{ child.url }}" target="{{ child.target }}" role="menuitem">
+											{{ child.name }}
+										</a>
 
-											{% if child.children %}
-												<ul class="flex flex-col gap-2.5 p-0">
-													{% for grandchild in child.children %}
-														{% if grandchild.master_object.status == 'publish' or grandchild.type == 'taxonomy' or grandchild.type == 'post_type_archive' %}
-															<li role="none">
-																<a class="text-base xl:text-lg font-bold text-accent hover:text-accent/70 {% if grandchild.current or grandchild.current_item_ancestor %}text-accent/70{% endif %}" href="{{ grandchild.url }}" target="{{ grandchild.target }}" role="menuitem" {% if grandchild.current %}aria-current="page"{% endif %}>
-																	{{ grandchild.name }}
-																</a>
-															</li>
-														{% endif %}
-													{% endfor %}
-												</ul>
-											{% endif %}
+										{% if child.children %}
+											<ul class="flex flex-col gap-2.5 p-0">
+												{% for grandchild in child.children %}
+													<li role="none">
+														<a class="text-base xl:text-lg font-bold text-accent hover:text-accent/70 {% if grandchild.current or grandchild.current_item_ancestor %}text-accent/70{% endif %}" href="{{ grandchild.url }}" target="{{ grandchild.target }}" role="menuitem" {% if grandchild.current %}aria-current="page"{% endif %}>
+															{{ grandchild.name }}
+														</a>
+													</li>
+												{% endfor %}
+											</ul>
+										{% endif %}
 
-										</div>
+									</div>
 
-									{% endif %}
 								{% endfor %}
 							</div>
 
@@ -91,41 +87,37 @@
 							x-transition:leave-end="opacity-0 -translate-y-2">
 
 						{% for child in item.children %}
-							{% if child.master_object.status == 'publish' or child.type == 'taxonomy' or child.type == 'post_type_archive' %}
 
-								<div class="dropdown-item relative {% if not loop.last %}border-b border-black/10{% endif %}"
-									{% if child.children %}x-data="{ subOpen: false, subTimer: null, subShow() { clearTimeout(this.subTimer); this.subOpen = true }, subHide() { this.subTimer = setTimeout(() => this.subOpen = false, 200) } }" @mouseenter="subShow()" @mouseleave="subHide()"{% endif %}>
+							<div class="dropdown-item relative {% if not loop.last %}border-b border-black/10{% endif %}"
+								{% if child.children %}x-data="{ subOpen: false, subTimer: null, subShow() { clearTimeout(this.subTimer); this.subOpen = true }, subHide() { this.subTimer = setTimeout(() => this.subOpen = false, 200) } }" @mouseenter="subShow()" @mouseleave="subHide()"{% endif %}>
 
-									<a class="flex items-center p-4 text-sm lg:text-base hover:text-accent {% if child.current or child.current_item_ancestor %}text-accent{% endif %}" href="{{ child.url }}" target="{{ child.target }}" role="menuitem" {% if child.current %}aria-current="page"{% endif %}>
-										{{ child.name }}
-										{% if child.children %}
-											<i class="far fa-angle-right ml-auto text-xs" aria-hidden="true"></i>
-										{% endif %}
-									</a>
-
+								<a class="flex items-center p-4 text-sm lg:text-base hover:text-accent {% if child.current or child.current_item_ancestor %}text-accent{% endif %}" href="{{ child.url }}" target="{{ child.target }}" role="menuitem" {% if child.current %}aria-current="page"{% endif %}>
+									{{ child.name }}
 									{% if child.children %}
-										<div class="dropdown-submenu absolute left-full top-0 z-30 m-0 flex w-56 flex-col border border-black/10 bg-white shadow-lg"
-											role="menu" aria-label="{{ child.name }}"
-											x-show="subOpen" x-cloak
-											x-transition:enter="transition ease-out duration-150"
-											x-transition:enter-start="opacity-0"
-											x-transition:enter-end="opacity-100"
-											x-transition:leave="transition ease-in duration-100"
-											x-transition:leave-start="opacity-100"
-											x-transition:leave-end="opacity-0">
-											{% for grandchild in child.children %}
-												{% if grandchild.master_object.status == 'publish' or grandchild.type == 'taxonomy' or grandchild.type == 'post_type_archive' %}
-													<a class="flex items-center border-b border-black/10 p-4 text-sm font-semibold hover:text-accent {% if grandchild.current or grandchild.current_item_ancestor %}text-accent{% endif %}" href="{{ grandchild.url }}" target="{{ grandchild.target }}" role="menuitem" {% if grandchild.current %}aria-current="page"{% endif %}>
-														{{ grandchild.name }}
-													</a>
-												{% endif %}
-											{% endfor %}
-										</div>
+										<i class="far fa-angle-right ml-auto text-xs" aria-hidden="true"></i>
 									{% endif %}
+								</a>
 
-								</div>
+								{% if child.children %}
+									<div class="dropdown-submenu absolute left-full top-0 z-30 m-0 flex w-56 flex-col border border-black/10 bg-white shadow-lg"
+										role="menu" aria-label="{{ child.name }}"
+										x-show="subOpen" x-cloak
+										x-transition:enter="transition ease-out duration-150"
+										x-transition:enter-start="opacity-0"
+										x-transition:enter-end="opacity-100"
+										x-transition:leave="transition ease-in duration-100"
+										x-transition:leave-start="opacity-100"
+										x-transition:leave-end="opacity-0">
+										{% for grandchild in child.children %}
+											<a class="flex items-center border-b border-black/10 p-4 text-sm font-semibold hover:text-accent {% if grandchild.current or grandchild.current_item_ancestor %}text-accent{% endif %}" href="{{ grandchild.url }}" target="{{ grandchild.target }}" role="menuitem" {% if grandchild.current %}aria-current="page"{% endif %}>
+												{{ grandchild.name }}
+											</a>
+										{% endfor %}
+									</div>
+								{% endif %}
 
-							{% endif %}
+							</div>
+
 						{% endfor %}
 					</div>
 

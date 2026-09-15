@@ -23,22 +23,28 @@ del contratto modulo (vedi `.claude/CLAUDE.md` → Moduli).
 
 ## Moduli disponibili
 
-| Modulo | Cosa fa | Extra |
-|---|---|---|
-| columns | testo + media affiancati (media flexible annidato) | — |
-| panel | split full-bleed immagine+testo (escluso dal ritmo verticale) | — |
-| cards | card con immagine (repeater) | — |
-| icons | card con icona FA, vista grid/carousel | icons.css |
-| numbers | contatori `[data-countup]` | — |
-| accordion | fisarmonica Alpine collapse | — |
-| faq | Q&A con JSON-LD FAQPage | faq.css |
-| cta | banda accent con immagine di sfondo opzionale | — |
-| form | CF7 + `data-typ` redirect thank-you | — |
-| contacts | mappa embed + testo | — |
-| separator | `<hr>` | — |
-| shortcode | shortcode WP | — |
-| code | HTML/embed grezzo | — |
-| posts | estrazione articoli in carosello `.posts-slider` | functions.php, tease-card.twig |
+| Modulo | Cosa fa | Extra | `sizes` attesa |
+|---|---|---|---|
+| columns | testo + media affiancati (media flexible annidato) | — | `(min-width: 48rem) calc((100vw - 7rem) / 2), calc(100vw - 3rem)` |
+| panel | split full-bleed immagine+testo (escluso dal ritmo verticale) | — | `(min-width: 80rem) 67vw, (min-width: 64rem) 50vw, 100vw` |
+| cards | card con immagine (repeater) | — | calcolata da `cardSizes` sul numero di card; lo sfondo di sezione è `100vw` |
+| icons | card con icona FA, vista grid/carousel | — | — (icona FA, nessuna immagine) |
+| numbers | contatori `[data-countup]` | — | — |
+| accordion | fisarmonica Alpine collapse | — | — |
+| faq | Q&A con JSON-LD FAQPage | faq.css | — |
+| cta | banda accent con immagine di sfondo opzionale | — | `calc(100vw - 3rem)` |
+| form | CF7 + `data-typ` redirect thank-you | — | — |
+| contacts | mappa embed + testo | — | — |
+| separator | `<hr>` | — | — |
+| shortcode | shortcode WP | — | — |
+| code | HTML/embed grezzo | — | — |
+| posts | estrazione articoli in carosello `.posts-slider` | functions.php, tease-card.twig | `(min-width: 80rem) calc((100vw - 6rem) / 3), (min-width: 40rem) calc((100vw - 4.5rem) / 2), calc(100vw - 3rem)` |
+
+**Le `sizes` valgono per il container del devkit**, che ha `padding-inline: 1.5rem` e **nessuna
+max-width**: da qui il `calc(100vw - 3rem)` che ricorre. Sono la larghezza CSS a cui l'immagine viene
+davvero mostrata, e il browser sceglie il candidato solo in base a quella — appena il progetto dà una
+max-width al container, o cambia la griglia di un modulo, vanno riscritte. Sbagliarle non produce
+errori: sovrastimare fa scaricare byte inutili, sottostimare dà un'immagine sfocata.
 
 Le chiavi ACF dei `fields.json` sono hash random già univoci: nessun conflitto
 se ne installi più d'uno o con i gruppi esistenti del progetto.

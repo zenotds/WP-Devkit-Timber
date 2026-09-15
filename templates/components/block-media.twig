@@ -1,4 +1,5 @@
 {# Modulo Media — media full-width (immagine / gallery / video / embed) con intestazione opzionale; gallery su .media-slider con data-per-view (init in scripts.js), lightbox VenoBox (.venobox), icone nav FontAwesome #}
+{# sizes derivate dalla griglia: il container vale 100vw - 3rem; il carosello mostra 1/2/3 slide ai breakpoint Swiper 640/1024 con gap 24px; contained è cappato a max-w-5xl (64rem, quindi il container comanda sotto i 67rem di viewport); fullbleed esce dal container #}
 {% import '/partial/macros.twig' as macros %}
 {% set tag = content.tag|default('h2') %}
 {% set bg = content.bg|default('none') %}
@@ -24,7 +25,7 @@
 				{% if media.acf_fc_layout == 'immagine' and media.image %}
 					{% set img = get_image(media.image) %}
 					<a class="venobox block overflow-clip" href="{{ img.src }}" data-gall="{{ secid }}" data-cursor="zoom">
-						{{ macros.image(img, { sizes: { 'xs': [800, 500], 'lg': [1200, 700], '2xl': [1440, 800] }, pictureClass: 'w-full', imgClass: 'w-full h-auto' }) }}
+						{{ macros.image(img, { sizes: 'calc(100vw - 3rem)', pictureClass: 'w-full', imgClass: 'w-full h-auto' }) }}
 					</a>
 
 				{% elseif media.acf_fc_layout == 'gallery' and media.images %}
@@ -40,7 +41,7 @@
 								{% for id in media.images %}
 									<div class="swiper-slide">
 										<a class="venobox block {{ aspectClass }} overflow-clip" href="{{ get_image(id).src }}" data-gall="{{ gall }}" data-cursor="zoom">
-											{{ macros.image(get_image(id), { sizes: { 'xs': [700, 520], 'md': [500, 375], 'lg': [460, 345] }}|merge(imgCfg)) }}
+											{{ macros.image(get_image(id), { sizes: '(min-width: 64rem) calc((100vw - 6rem) / 3), (min-width: 40rem) calc((100vw - 4.5rem) / 2), calc(100vw - 3rem)' }|merge(imgCfg)) }}
 										</a>
 									</div>
 								{% endfor %}
@@ -54,7 +55,7 @@
 								{% for id in media.images %}
 									<div class="swiper-slide">
 										<div class="{{ aspectClass }} overflow-clip">
-											{{ macros.image(get_image(id), { sizes: { 'xs': [800, 600], 'md': [720, 540], 'lg': [976, 732] }}|merge(imgCfg)) }}
+											{{ macros.image(get_image(id), { sizes: '(min-width: 67rem) 64rem, calc(100vw - 3rem)' }|merge(imgCfg)) }}
 										</div>
 									</div>
 								{% endfor %}
@@ -72,7 +73,7 @@
 								{% for id in media.images %}
 									<div class="swiper-slide flex justify-center bg-light">
 										<div class="{{ aspectClass }} max-h-screen overflow-clip mx-auto">
-											{{ macros.image(get_image(id), { sizes: { 'xs': [768], 'md': [1280], 'lg': [1600], '2xl': [1920] }}|merge(imgCfg)) }}
+											{{ macros.image(get_image(id), { sizes: '100vw' }|merge(imgCfg)) }}
 										</div>
 									</div>
 								{% endfor %}

@@ -1,9 +1,9 @@
-{# This file demonstrates using most of the index.twig template and modifying 
-   just a small part. See `search.twig` for an example of another approach #}
-
+{# Archivio (categorie, tag, tassonomie, date, CPT): riusa il loop di index.twig e aggiunge la descrizione del termine. Titolo e termine arrivano da archive.php. Un archivio-landing di progetto sostituisce questi testi coi campi ACF sul termine #}
 {% extends "index.twig" %}
 
-{% block content %}
-	<h3>This is my archive</h3>
+{% block intro %}
 	{{ parent() }}
+	{% if category.description %}
+		<div class="description typo-r">{{ category.description }}</div>
+	{% endif %}
 {% endblock %}

@@ -25,6 +25,11 @@
 		padding-block: var(--section-pad);
 	}
 
+	/* La banda CTA prefooter si salda all'ultima sezione: il margin lascerebbe una riga bianca. `.cta-band` è la classe convenuta per ciò che riempie il blocco `cta` di base.twig, vuoto nel devkit */
+	&:has(+ .cta-band) {
+		margin-bottom: 0;
+	}
+
 	/* La prima sezione sta attaccata all'header del sito (page-header, visual homepage) */
 	> :first-child {
 		padding-top: 0;

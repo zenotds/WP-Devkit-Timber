@@ -58,21 +58,39 @@
 		}
 	}
 
-	input,
+	/* Aspetto dei campi PER ELEMENTO e non per classe: un form scritto senza `class:form-input` sui tag CF7 resta comunque vestito */
+	input:not([type="checkbox"], [type="radio"], [type="submit"], [type="button"]),
 	textarea,
 	select {
-		&:focus,
-		&:focus-visible {
-			outline: none;
-			box-shadow: none;
+		width: 100%;
+		padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+		border: 1px solid color-mix(in oklab, black 10%, transparent);
+		border-radius: var(--radius-lg);
+		background: white;
+		color: var(--color-body);
+		font-size: var(--text-base);
+		line-height: 1.4;
+		transition: border-color 0.2s;
+
+		&:hover {
+			border-color: color-mix(in oklab, black 25%, transparent);
 		}
 	}
 
-	.form-input,
-	.form-textarea,
-	.form-select,
-	.form-multiselect {
-		width: 100%;
+	/* L'altezza la dichiara il tag CF7 con le sue righe (`[textarea* messaggio x4]`), non il CSS: così il redattore la cambia dal form senza passare dal tema */
+	textarea {
+		resize: vertical;
+	}
+
+	/* Chevron come background-image: un SVG inline vorrebbe un wrapper attorno al select */
+	select {
+		appearance: none;
+		padding-right: calc(var(--spacing) * 10);
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2322262a' stroke-width='1.5'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right calc(var(--spacing) * 4) center;
+		background-size: 1rem;
+		cursor: pointer;
 	}
 
 	.form-toggle {
@@ -115,11 +133,15 @@
 		gap: calc(var(--spacing) * 6);
 	}
 
+	/* `!important` obbligato: il CSS di CF7 è caricato senza `@layer` e batte QUALUNQUE layer dell'autore, anche a specificità più bassa. Senza, il suo `margin-left` rientra le caselle rispetto ai campi */
 	.wpcf7-list-item {
-		margin: 0;
+		margin: 0 !important;
 	}
 
-	.wpcf7-not-valid {
+	/* Il selettore ripete il tag: la regola generica dei campi è `.form input:not([type=…])`, che ha specificità più alta di una classe sola — altrimenti il bordo rosso resterebbe solo sulla textarea */
+	input.wpcf7-not-valid,
+	textarea.wpcf7-not-valid,
+	select.wpcf7-not-valid {
 		border-color: var(--color-error);
 	}
 

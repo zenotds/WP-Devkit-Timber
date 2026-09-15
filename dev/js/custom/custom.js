@@ -282,7 +282,9 @@ export class HoverIntent {
 /**
  * Enables smooth scrolling to anchor links on the same page.
  * Automatically accounts for fixed header heights to prevent content from hiding behind headers.
- * 
+ *
+ * NOT optional: this is the accessibility fallback that `initAnchors()` in scripts.js calls when Lenis is off for `prefers-reduced-motion`. Without it the anchors lose the sticky-header offset for exactly the people who asked for reduced motion.
+ *
  * Works with any anchor link that starts with '#' and points to an element with a matching ID.
  *
  * @param {string} [selector='[href^="#"]'] - CSS selector for anchor links to enhance

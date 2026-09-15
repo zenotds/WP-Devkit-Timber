@@ -1,12 +1,15 @@
+{# Loop degli archivi: titolo, card e paginazione. archive.twig ne eredita il blocco `intro` per aggiungere la descrizione del termine #}
 {% extends "base.twig" %}
 
 {% block content %}
-	{% if title %}
-		<h1 class="title">{{ title }}</h1>
-	{% endif %}
+	{% block intro %}
+		{% if title %}
+			<h1 class="title typo-h text-h1">{{ title }}</h1>
+		{% endif %}
+	{% endblock %}
 
 	{% for post in posts %}
-		{% include ['tease-'~post.post_type~'.twig', 'tease.twig'] %}
+		{% include 'tease-' ~ post.post_type ~ '.twig' %}
 	{% endfor %}
 
 	{% include 'partial/pagination.twig' with { pagination: posts.pagination({show_all: false, mid_size: 3, end_size: 2}) } %}

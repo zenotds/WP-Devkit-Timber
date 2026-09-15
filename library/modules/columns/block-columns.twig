@@ -1,4 +1,5 @@
 {# Modulo Columns — testo + media affiancati (lato selezionabile via align); gallery su .media-slider (init in scripts.js, data-per-view default 1), lightbox VenoBox (.venobox) #}
+{# sizes: la colonna media è metà griglia da md (48rem) con gap-16, piena larghezza del container sotto #}
 {% import '/partial/macros.twig' as macros %}
 {% set tag = content.tag|default('h2') %}
 {% set bg = content.bg|default('none') %}
@@ -11,12 +12,13 @@
 
 			{# Media: immagine singola / gallery slider / video mp4 / embed #}
 			{% if media %}
-				<div class="media {{ content.align == 'end' ? 'md:order-last' }}">
+				{# min-w-0: la colonna è un grid item, che di serie ha min-width auto — senza, Swiper la misura sul contenuto e le slide spaginano #}
+				<div class="media min-w-0 {{ content.align == 'end' ? 'md:order-last' }}">
 
 					{% if media.acf_fc_layout == 'immagine' and media.image %}
 						{% set img = get_image(media.image) %}
 						<a class="venobox block overflow-clip" href="{{ img.src }}" data-gall="{{ secid }}" data-cursor="zoom">
-							{{ macros.image(img, { sizes: { 'xs': [600], 'md': [480], 'lg': [600] }, pictureClass: 'w-full', imgClass: 'w-full h-auto' }) }}
+							{{ macros.image(img, { sizes: '(min-width: 48rem) calc((100vw - 7rem) / 2), calc(100vw - 3rem)', pictureClass: 'w-full', imgClass: 'w-full h-auto' }) }}
 						</a>
 
 					{% elseif media.acf_fc_layout == 'gallery' and media.images %}
@@ -25,7 +27,7 @@
 								{% for id in media.images %}
 									<div class="swiper-slide">
 										<a class="venobox block aspect-4/3 overflow-clip" href="{{ get_image(id).src }}" data-gall="{{ secid }}-gallery" data-cursor="zoom">
-											{{ macros.image(get_image(id), { sizes: { 'xs': [600], 'md': [480], 'lg': [600] }, pictureClass: 'w-full h-full', imgClass: 'w-full h-full object-cover' }) }}
+											{{ macros.image(get_image(id), { sizes: '(min-width: 48rem) calc((100vw - 7rem) / 2), calc(100vw - 3rem)', pictureClass: 'w-full h-full', imgClass: 'w-full h-full object-cover' }) }}
 										</a>
 									</div>
 								{% endfor %}

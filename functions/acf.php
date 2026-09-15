@@ -93,20 +93,20 @@ function format_acf_text_fields($value, $post_id, $field)
 }
 add_filter('acf/format_value', 'format_acf_text_fields', 10, 3);
 
-// Aggiungi ID univoco a tutti gli array di ACF
+// Aggiunge un ID univoco a ogni riga di repeater e flexible content
 function add_uniqueid_to_acf($value, $post_id, $field)
 {
-	// Controlla se il valore del campo è un array (applicabile per ripetitori e contenuti flessibili)
-	if (is_array($value)) {
-		// Cicla attraverso ogni elemento nell'array (riga o layout)
-		foreach ($value as &$element) {
-			// Controlla se l'elemento è un array e non ha un 'unique_id'
-			if (is_array($element) && !isset($element['unique_id'])) {
-				// Genera un ID univoco e assegnalo all'elemento
-				$element['unique_id'] = uniqid();
-			}
+	// Solo su repeater/flexible: su un array qualunque il filtro inserisce l'id come RIGA dentro un repeater annidato in un group, e ACF va in fatal "Cannot access offset of type string on string" formattando il valore
+	if (!is_array($value) || !in_array($field['type'] ?? '', ['repeater', 'flexible_content'], true)) {
+		return $value;
+	}
+
+	foreach ($value as &$row) {
+		if (is_array($row) && !isset($row['unique_id'])) {
+			$row['unique_id'] = uniqid();
 		}
 	}
+
 	return $value;
 }
 add_filter('acf/load_value', 'add_uniqueid_to_acf', 10, 3);
@@ -118,6 +118,38 @@ function my_acf_google_map_api($api)
 	return $api;
 }
 add_filter('acf/fields/google_map/api', 'my_acf_google_map_api');
+
+// Fonte unica dei colori editor, allineata ai token @theme di dev/css/styles.css: la usano sia i campi WYSIWYG di ACF sia l'editor classico. Cambiando i token, cambiare anche qui — nessuno dei due legge il CSS.
+function editor_color_palette()
+{
+	return [
+		'Accent' => '609422',
+		'Scuro' => '22262a',
+		'Testo' => '64748b',
+		'Chiaro' => 'f2f1f0',
+		'Bianco' => 'ffffff',
+	];
+}
+
+// TinyMCE vuole un array piatto: hex, nome, hex, nome…
+function editor_textcolor_map()
+{
+	$map = [];
+	foreach (editor_color_palette() as $name => $hex) {
+		$map[] = $hex;
+		$map[] = $name;
+	}
+	return $map;
+}
+
+// Editor classico nativo: la stessa palette dei campi ACF
+function editor_tinymce_colors($mce_init)
+{
+	$mce_init['textcolor_map'] = wp_json_encode(editor_textcolor_map());
+	$mce_init['textcolor_cols'] = count(editor_color_palette());
+	return $mce_init;
+}
+add_filter('tiny_mce_before_init', 'editor_tinymce_colors');
 
 // Personalizza WYSIWYG Toolbar
 add_filter('acf/fields/wysiwyg/toolbars', 'customize_acf_wysiwyg_toolbars');
@@ -143,10 +175,11 @@ function add_acf_wysiwyg_custom_settings($field)
 					// Remove H1 from format dropdown
 					mceInit.block_formats = 'Paragraph=p;Heading 2=h2;Heading 3=h3;Heading 4=h4;Heading 5=h5;Heading 6=h6;Preformatted=pre';
 
-					// Palette colori custom: vedi .claude/CLAUDE.md → "Ricette"
+					// Palette colori: fonte unica editor_color_palette(), in questo file
+					mceInit.textcolor_map = <?php echo wp_json_encode(editor_textcolor_map()); ?>;
 
 					// Number of columns in color picker
-					mceInit.textcolor_cols = 5;
+					mceInit.textcolor_cols = <?php echo count(editor_color_palette()); ?>;
 
 					// Remove the toolbar toggle button and show all toolbars by default
 					mceInit.wordpress_adv_hidden = false;

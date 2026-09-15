@@ -1,4 +1,4 @@
-# Framework di sviluppo — WP DevKit Timber v7.5 (Zeno / Bizen)
+# Framework di sviluppo — WP DevKit Timber v8.0 (Zeno / Bizen)
 
 Base **riutilizzabile** per temi WordPress + ACF Pro + Timber 2 + Tailwind 4.
 Distillata da temi di produzione.
@@ -26,7 +26,12 @@ Rispondere a Francesco **in italiano**.
 - **Performance di default**: immagini AVIF/WebP lazy, font self-hosted con preload, script defer,
   niente librerie quando bastano CSS/Alpine.
 - **Commenti asciutti**: una riga che dice cosa fa il blocco e gli eventuali requisiti.
-  Niente parafrasi della riga successiva. Mai newline dentro `{# #}` / `/* */`.
+  Niente parafrasi della riga successiva. **Un paragrafo non si spezza su più righe**: nei docblock
+  PHP e nei blocchi `//` sta su UNA riga per quanto lunga, e i paragrafi si separano con una riga
+  vuota. La lunghezza non è un problema, il paragrafo a fette lo è — a capo ogni 80 colonne il
+  ragionamento si legge peggio, non meglio. Mai newline dentro `{# #}` / `/* */`.
+  Il **perché** e i tentativi scartati vanno in `PROJECT.md`, non nel codice: il codice dice cosa
+  fa e cosa richiede, la cronaca di come ci si è arrivati sta nel log del progetto.
 - **Verifica via utente, non browser headless**: implementare, riassumere, lasciar verificare
   visivamente. Con watch attivo (BrowserSync) NON lanciare `npm run build` a ogni modifica.
 
@@ -43,6 +48,7 @@ dev/css/     styles.css (importer + @theme) → base/ layout/ partial/ component
 dev/js/      scripts.js (entry + init) + custom/custom.js (utility riusabili)
 assets/      output compilato — mai editare a mano
 acf-json/    field group versionati + CPT/tassonomie/options di progetto
+languages/   .mo/.po/.pot dell'admin di Timber AVIF (textdomain `timber-avif`)
 ```
 
 - PHP: `StarterSite extends Timber\Site`; contesto globale con `settings` (ACF options via
@@ -64,6 +70,7 @@ Ogni valore da cambiare a inizio progetto ha UN punto di modifica (checklist com
 | Palette e tipografia | blocco `@theme` in `dev/css/styles.css` (token funzionali, vedi CSS) |
 | Palette editor WYSIWYG | `editor_color_palette()` in `functions/acf.php` (allineata ai token) |
 | Font | `dev/css/base/fonts.css` + preload in `functions/enqueue.php` |
+| Lingua dell'admin Timber AVIF | `languages/` in root (il `.mo` italiano c'è già; senza, l'admin resta in inglese) |
 | FontAwesome Pro | aggiunta manuale: CSS in `dev/css/fontawesome/`, woff2 in `assets/webfonts/`, scommentare gli import in `styles.css` |
 
 ## Build
@@ -102,6 +109,10 @@ Ogni valore da cambiare a inizio progetto ha UN punto di modifica (checklist com
   (`.nav-item.active`) e la base nelle utility del twig (`after:scale-y-0`), lo stato non vince
   più: le utility sono in un layer superiore. Vale per l'underline del main-menu e per l'hover
   del mobile-menu, entrambi ora interamente in `partial/`.
+  Corollario, costato un'ora: in un ternario Alpine **anche il non-stato va scritto nel ramo
+  falso**. Una classe statica sull'elemento e una classe del `:class` che si contendono la stessa
+  property non hanno un vincitore prevedibile — vince quella che Tailwind emette dopo, che dipende
+  dall'ordine interno delle utility e non da come è scritto il markup.
 - Tipografia fluida: `--text-hero/h1…h6/lead/quote` con `clamp()` (rif. 1920→375px), line-height nei
   token. Tailwind 4 emette solo i token usati.
 - **Ritmo verticale** (`layout/common.css`): il padding lo porta `.main > *`
@@ -116,19 +127,34 @@ Ogni valore da cambiare a inizio progetto ha UN punto di modifica (checklist com
   sulla sezione + `.bg-media` sulla picture (grayscale+multiply).
 - **`[x-cloak]{display:none!important}` è VITALE**: presente in `base/base.css` E inline in
   `html/head.twig` (anti-FOUC prima del CSS esterno). Non rimuoverla.
+- **`min-w-0` sugli item di grid e flex che contengono uno slider.** Un grid item ha
+  `min-width: auto` di serie, quindi si dimensiona sul contenuto: Swiper misura il contenitore
+  troppo largo e scrive larghezze inline enormi, e le slide spaginano. Stesso difetto sui flex
+  item. Sulle tracce serve `minmax(0, …)`, che `grid-cols-N` di Tailwind già usa mentre un `1fr 2fr`
+  scritto a mano no. Se uno slider ha bisogno di puntelli per stare in piedi, guardare il
+  contenitore prima della libreria.
+- **Niente `<br>` nei contenuti**: le interruzioni di riga dei mockup dipendono dalla larghezza
+  della colonna, non dal testo — a un altro breakpoint spezzano nel punto sbagliato. E
+  `text-balance` non è il rimedio: su testi corti in colonna stretta distribuisce peggio del wrap
+  naturale, quindi va messo sui titoli e tolto dalle card.
 - Scope: globale in `partial/`, di modulo in `components/` (un file per block-* che ne ha bisogno,
   import nella sezione Components di styles.css, sempre con `layer(components)`).
   Classi stato/aggancio JS in kebab.
 
 ## Twig
 
+- **Chi estende `base.twig` sta in root**; le sottocartelle sono per i pezzi che vengono *inclusi*
+  (`partial/`, `components/`, `html/`, `tools/`). I tease stanno in root coi template che li usano.
 - `base.twig` con blocchi `html_head / custom_scripts / extra_head / header / content / cta / footer / extra_js`.
 - Dispatcher flexible: loop su `post.meta('content')` → `components/block-<acf_fc_layout>.twig`
   (`partial/page-content.twig`). NIENTE `ignore missing`: un layout senza twig deve fallire rumorosamente.
-- Macro in `partial/macros.twig`: `intro()`, `image()` (picture responsive AVIF/WebP, `sizes` per
-  breakpoint, `atf: true` per fetchpriority), `mp4()` (poster nativo per LCP), `embed()`.
-- Filtri custom (functions/twig.php): `|svg`, `|slug`, `|size`, `|video_src/provider/id`, `|toavif`,
-  `|avif_src/webp_src/best_src`; funzioni `get_field()`, `uniqueid()`, `module_posts()`.
+- Macro in `partial/macros.twig`: `image()` (picture con `srcset` a descrittori `w`;
+  `sizes` è la **larghezza CSS** a cui l'immagine viene mostrata, derivata dalla griglia attorno alla
+  chiamata, non un elenco di pixel; `ratio` croppa lato server solo dove serve davvero, `max` cappa i
+  candidati, `atf: true` per fetchpriority), `mp4()` (poster nativo per LCP), `embed()`.
+- Filtri custom (functions/twig.php): `|svg`, `|slug`, `|size`, `|video_src/provider/id`; da
+  `functions/avif.php` `|toavif`, `|avif_src/webp_src/best_src` e la funzione `image_sources()`;
+  funzioni `get_field()`, `uniqueid()`, `module_posts()`.
 - CF7: `{% apply shortcodes %}[contact-form-7 id="{{ form.ID }}"]{% endapply %}`, campo ACF
   `post_object` su `wpcf7_contact_form`.
 - Campi immagine `return_format: url` si stampano diretti; i campi immagine dei moduli usano
@@ -157,6 +183,10 @@ Procedura di installazione in `library/README.md`.
   print singoli inline. Niente `|default('testo')`: l'elvis `?:` solo per fallback a un altro campo.
 - Card factory via macro `_self.card()` — gli `import` top-level NON entrano nello scope delle
   macro: reimportare i macros DENTRO la macro.
+- **Griglie di card con `div`, non `ul`/`li`**: tutti i moduli usano `div.grid` e la coerenza
+  interna vale più del purismo semantico. Corollario che è anche un bug ricorrente: un `<a>` o un
+  `<article>` usato come flex item **senza `w-full`** si dimensiona sul contenuto, e le celle
+  escono di larghezze diverse. Dentro una grid serve invece `min-w-0` sull'item (vedi CSS / Tailwind).
 
 **Workflow nuovo modulo di progetto:**
 1. Gruppo ACF "Modulo: X" in admin (active: false, location dummy su `post`) → ACF lo salva in acf-json/.
@@ -171,11 +201,18 @@ Procedura di installazione in `library/README.md`.
 - Options pages: Opzioni (parent) → Anagrafica, Opzioni Tema, Opzioni Avanzate. Tutto in
   `$context['settings']`. In admin preferire fisarmoniche (`type: accordion`) alle tab top-level.
 - **Niente placeholder / default_value testuali / instructions ridondanti** nei campi.
+- **Repeater in vista `block`**, con l'unica eccezione del repeater a un solo campo breve: in
+  blocco diventerebbe una colonna di blocchi alti per niente. `collapsed` va impostato sul campo
+  che identifica la riga, o le righe chiuse sono indistinguibili.
+- **Larghezze**: campo lungo a piena larghezza, campi piccoli appaiati al 50%, **70/30** per la
+  coppia titolo + tag.
 - Personalizzazioni in functions/acf.php: pattern `*testo*` → `<span class="alt">`, `unique_id`
   sulle righe repeater/flexible, location rule `menu_level`, WYSIWYG toolbar custom (no H1),
   GMaps key da `GMAPS_API_KEY`.
-- Editor: fonte unica `editor_color_palette()` (da creare per progetto, vedi Ricette) allineata
-  ai token `@theme`.
+- Editor: fonte unica `editor_color_palette()` in `functions/acf.php`, allineata ai token `@theme`.
+  La usano sia i campi WYSIWYG di ACF sia l'editor classico (`tiny_mce_before_init`): si cambiano
+  i colori lì e basta. Nessuno dei due legge il CSS, quindi cambiando i token va cambiata anche
+  quella.
 
 ### Gotcha ACF (importanti — pagate care, non ripeterle)
 
@@ -187,6 +224,9 @@ Procedura di installazione in `library/README.md`.
   ovunque registrato → nomi univoci per i campi options. In dubbio usare la chiave.
 - **`unique_id` filter**: SOLO su `repeater`/`flexible_content`, id DENTRO ogni riga. Su tutti gli
   array corrompe i repeater annidati (fatal `offset on string`).
+- **`display: grid` su un campo ACF**: va spento il clearfix di `.acf-hl` (`content: none` su
+  `::before` e `::after`), o i due pseudo-elementi diventano celle della griglia e il primo si vede
+  come un buco davanti alle scelte.
 - **wp-cli + group/option**: un singolo sub-field di un `group` per chiave a volte non attecchisce →
   riscrivere l'intero gruppo con `update_field(group_key, [...], 'option')`. `add_row` con selettore
   annidato può andare in fatal → `update_sub_field(["content", N, "campo"], $array)`.
@@ -196,6 +236,15 @@ Procedura di installazione in `library/README.md`.
 - **Nomi file JSON parlanti**: `group_<slug-del-titolo>.json` (es. `group_modulo-free.json`),
   garantiti dal filtro `acf/json/save_file_name` in acf.php. Conseguenza: titoli dei
   gruppi UNIVOCI, o due gruppi si sovrascrivono lo stesso file.
+- **Meta fantasma riscrivendo un flexible da codice**: `update_field()` non cancella i sub-field
+  assenti e `delete_field()` cancella solo quelli del layout corrente, quindi i valori vecchi
+  restano nei meta e **ricompaiono sotto il modulo sbagliato** al primo layout che riusa quel nome.
+- **Cancellare il JSON di un gruppo NON lo toglie dal DB**: il gruppo resta registrato e continua a
+  comparire in admin. Serve `acf_delete_field_group()`.
+- **`acf_import_field_group()` su certe installazioni DUPLICA invece di aggiornare**, e rigenerando
+  i JSON dal DB se ne perdono dei campi. Preferire la sincronizzazione da admin.
+- **I sub-field annidati hanno come parent il CAMPO, non il gruppo**: una query «trova gli orfani»
+  scritta assumendo il contrario cancella mezzo tema.
 
 ## JS
 
@@ -213,7 +262,14 @@ Procedura di installazione in `library/README.md`.
   dots desync).
 - Librerie standard: GSAP+ScrollTrigger, Lenis, Swiper, MixItUp(+multifilter, per i filtri archivio),
   vLitejs (+youtube/vimeo/volume/mobile), VenoBox, CountUp. `custom/custom.js`: Autohide,
-  HoverIntent, SmoothScroll, Sticky (opt-in, importare solo ciò che serve).
+  HoverIntent, Sticky sono opt-in (importare solo ciò che serve); **`SmoothScroll` no**, è il
+  fallback di accessibilità che `initAnchors()` chiama quando Lenis è spento per
+  `prefers-reduced-motion` — senza, gli anchor perdono l'offset dell'header sticky proprio per chi
+  ha scelto il moto ridotto.
+- **`data-lenis-prevent` su ogni contenitore con scroll proprio** (pannelli offcanvas, elenchi,
+  tendine, tabelle in `overflow`): Lenis intercetta la rotella a monte e la attribuisce allo scroll
+  di pagina, quindi il pannello resta fermo e sembra un difetto dell'`overflow`, che invece è
+  corretto. L'attributo vale anche sugli antenati.
 - Non scrivere JS per ciò che CSS/Alpine fanno meglio.
 
 ## Gutenberg / editor (opzionale)
@@ -230,8 +286,16 @@ Procedura di installazione in `library/README.md`.
   in `.form-toggle` con **id prefissati dallo unit-tag CF7**: senza prefisso, due form nella stessa
   pagina collidono su `privacy`/`marketing` e la label spunta la checkbox sbagliata.
 - Markup: `.form-group` (+`.full`), `.form-section`, `.check-group`, `.send-group > .send-btn`.
-- `[submit]` genera `<input>`: niente pseudo-elementi → l'effetto fill `.btn` non funziona; usare
-  fallback colore o `<button type="submit">` raw.
+  L'aspetto dei campi in `partial/forms.css` è **per elemento e non per classe**, così un form
+  scritto senza `class:form-input` sui tag resta comunque vestito.
+- `[submit]` genera `<input>`: niente pseudo-elementi → l'effetto fill `.btn` non funziona; serve un
+  `<button type="submit">`, e con la classe **`wpcf7-submit`**, che è quella che il JS di CF7 cerca
+  per disabilitare l'invio finché un `[acceptance]` obbligatorio non è spuntato.
+- **`novalidate` sul wrapper `.form`**: CF7 valida a ogni `change` e il suo `validate()` scorre
+  tutti i wrap fino al target, quindi cliccando un consenso in fondo segna errati tutti i campi
+  vuoti sopra. La validazione del submit resta.
+- **Il CSS di CF7 è caricato senza `@layer`**, quindi batte qualunque layer dell'autore a
+  prescindere dalla specificità: per raggiungere le sue regole serve `!important`.
 
 ## Bottoni
 
@@ -244,11 +308,25 @@ Procedura di installazione in `library/README.md`.
 
 ## SEO & contenuti
 
-- Yoast breadcrumbs re-markuppati come `<li><a>` (functions/custom.php).
+- Yoast breadcrumbs rimarkuppati in `<ol><li><a>` **coi filtri del plugin** (`single_link_wrapper`
+  → `li`, `output_wrapper` → `ol`, `output_class`), non con `str_replace` sull'output. Il separatore
+  Yoast è vuoto e il `/` lo disegna `partial/breadcrumb.css` con `li + li::before`: fra due `<li>`
+  un testo nudo non è markup valido. Yoast **ignora un wrapper vuoto** e ricade su `span`, quindi
+  il wrapper si sostituisce, non si elimina.
+- **Yoast analizza `post_content`**, che su una pagina a moduli è vuoto: il ponte è
+  `theme_yoast_modules_bridge()` in `functions/custom.php`, che passa il testo dei moduli al motore
+  JS. ⚠️ Il testo è quello SALVATO: l'analisi si aggiorna al salvataggio, non mentre si scrive.
 - Archivi tassonomia = landing crawlabili (H1/testo da campi term); filtri client-side MixItUp
   (`posts_per_page: -1`) o chip-link server-side se l'archivio è grande.
 - Voce menu ≠ H1 di pagina. Footer: voce "Credits" verso il sito dello studio,
   `target="_blank" rel="nofollow noopener"`.
+
+## Dipendenze esterne
+
+- **La sanificazione degli SVG all'upload sta nel modulo `svg-flatten` di Bizen Toolkit**, non nel
+  tema. Senza il plugin, due SVG di Illustrator inlineati nella stessa pagina si rubano i colori:
+  le classi generate (`.cls-1`) sono identiche in tutti i file e l'ultimo `<style>` vince. Il
+  sintomo è cattivo perché sembra una scelta di design sbagliata, non un bug.
 
 ## Lettura materiali designer
 
@@ -256,6 +334,8 @@ Procedura di installazione in `library/README.md`.
   `syncRef` non risolvibili: partire dagli artboard mobile. "UI Elements" = design system.
 - **PDF**: `pdftoppm` + `pdftotext`. Cercare "Indicazioni generali".
 - Verificare sempre i valori sul sito reale con `curl`/wp-cli prima di "fixare" a voce.
+- **I mockup si normalizzano**: dove due tavole si contraddicono si sceglie, si annota la scelta in
+  `PROJECT.md` e non si riproduce l'incoerenza nel codice.
 
 ## Flusso di lavoro
 
@@ -263,6 +343,9 @@ Procedura di installazione in `library/README.md`.
 2. Design system dall'XD → `@theme` + font self-hosted.
 3. Header + footer + menu → CPT/tassonomie → archivi → single → moduli flexible → blog.
 4. Con watch attivo basta salvare; altrimenti `npm run build` e grep sul min.css per i token attesi.
+   **Verifica mobile**: Chrome headless non scende sotto ~485px, quindi uno screenshot a 375 è
+   *ritagliato* e non riscalato — sembra overflow orizzontale e non lo è. Senza CDP l'unica prova
+   valida è renderizzare a 485 e confrontare `scrollWidth` con `clientWidth`.
 5. Commit frequenti, messaggi imperativi con scope chiaro.
 6. Ogni decisione/gotcha di progetto → annotarla in `PROJECT.md` subito.
 
@@ -275,22 +358,12 @@ Snippet opzionali tenuti fuori dai sorgenti. Copiarli dove indicato quando servo
 ```php
 function acf_rel_sample($args, $field, $post_id)
 {
-    $args['meta_key'] = '_wp_page_template';
-    $args['meta_value'] = ['template-name.php'];
-    return $args;
+	$args['meta_key'] = '_wp_page_template';
+	$args['meta_value'] = ['template-name.php'];
+	return $args;
 }
 add_filter('acf/fields/relationship/query/name=field_name', 'acf_rel_sample', 10, 3);
 // idem con acf/fields/post_object/query/name=...
-```
-
-### TinyMCE: palette colori brand (functions/acf.php, dentro `wysiwyg_tinymce_settings`)
-
-```js
-// Colori allineati ai token @theme di dev/css/styles.css
-mceInit.textcolor_map = [
-    '609422', 'Accent',
-    '22262a', 'Dark',
-];
 ```
 
 ### Enqueue: brand color da opzioni ACF come CSS variable (functions/enqueue.php)
@@ -298,7 +371,7 @@ mceInit.textcolor_map = [
 ```php
 // Abbinare a `--color-accent: var(--brand-color)` nel blocco @theme
 if (function_exists('get_field') && $brand_color = get_field('color', 'options')) {
-    wp_add_inline_style('theme-styles', ":root { --brand-color: {$brand_color}; }");
+	wp_add_inline_style('theme-styles', ":root { --brand-color: {$brand_color}; }");
 }
 ```
 

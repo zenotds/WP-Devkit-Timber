@@ -1,4 +1,5 @@
 {# Card generica per i caroselli (modulo Posts): immagine + pannello con categoria|data e titolo. Classe .surface: dentro le sezioni data-bg="dark" il testo resta scuro (dev/css/layout/section-bg.css) #}
+{# sizes tarate sul consumatore principale, il carosello .posts-slider dentro il container: 1/2/3 slide ai breakpoint 640/1280 con gap 24px #}
 {% import '/partial/macros.twig' as macros %}
 {% set cat = post.terms('category')|first %}
 
@@ -6,7 +7,7 @@
 	<a href="{{ post.link }}" class="group media-hover relative block aspect-4/3 overflow-clip bg-light">
 		{% if post.thumbnail %}
 			{{ macros.image(post.thumbnail, {
-				sizes: { 'xs': [720, 540], 'sm': [420, 315], 'lg': [400, 300] },
+				sizes: '(min-width: 80rem) calc((100vw - 6rem) / 3), (min-width: 40rem) calc((100vw - 4.5rem) / 2), calc(100vw - 3rem)',
 				pictureClass: 'block h-full',
 				imgClass: 'h-full w-full object-cover'
 			}) }}

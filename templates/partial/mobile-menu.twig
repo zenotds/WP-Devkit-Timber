@@ -23,7 +23,7 @@
 
 			<div class="backdrop fixed inset-0 bg-black/80 z-1000 opacity-0 transition-opacity duration-500" :class="offcanvas && 'opacity-100'" @click="offcanvas = false" aria-hidden="true"></div>
 
-			<div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-1000 overflow-y-auto transition-transform duration-500 max-w-full w-100" :class="{ 'active': offcanvas }" role="dialog" aria-modal="true" aria-labelledby="submenu-title-{{ item.id }}" x-trap="offcanvas">
+			<div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-1000 overflow-y-auto transition-transform duration-500 max-w-full w-100" data-lenis-prevent :class="{ 'active': offcanvas }" role="dialog" aria-modal="true" aria-labelledby="submenu-title-{{ item.id }}" x-trap="offcanvas">
 
 				{# Indietro riapre il livello di sopra: `menu_item_parent` a 0 significa il primo #}
 				<div class="header border-b border-black/15 flex items-center p-4">
@@ -60,7 +60,7 @@
 	{# Opacità e non x-show: x-show toglie `display` di colpo e il backdrop sparirebbe prima del pannello #}
 	<div class="backdrop fixed inset-0 bg-black/80 z-1000 opacity-0 transition-opacity duration-500" :class="offcanvas && 'opacity-100'" @click="offcanvas = false" aria-hidden="true"></div>
 
-	<div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-1000 overflow-y-auto transition-transform duration-500 max-w-full w-100" :class="{ 'active': offcanvas }" role="dialog" aria-modal="true" aria-labelledby="mobile-menu-title" x-trap.noscroll="offcanvas">
+	<div class="offcanvas-panel offcanvas-right bg-white fixed min-h-full top-0 bottom-0 z-1000 overflow-y-auto transition-transform duration-500 max-w-full w-100" data-lenis-prevent :class="{ 'active': offcanvas }" role="dialog" aria-modal="true" aria-labelledby="mobile-menu-title" x-trap.noscroll="offcanvas">
 
 		<div class="header border-b border-black/15 flex items-center p-4">
 
@@ -69,7 +69,7 @@
 			</button>
 
 			<a href="{{ site.url }}" class="logo flex m-0" aria-label="{{ __('Vai alla homepage', 'theme') }}">
-				<img src="{{ settings.header_logo|towebp|resize(200) }}" class="logo-image h-14 w-auto" width="125" height="72" alt="{{ site.title }}">
+				<img src="{{ settings.header_logo }}" class="logo-image h-14 w-auto" width="125" height="72" alt="{{ site.title }}">
 			</a>
 		</div>
 
