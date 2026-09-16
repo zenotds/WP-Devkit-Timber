@@ -26,7 +26,8 @@
 
 ## Moduli
 
-- Moduli libreria v7 attivi: (tutti / elenco)
+- Moduli installati dalla dispensa `library/`: (elenco)
+- `sizes` riviste dopo l'installazione? (vedi `library/README.md`; vanno rifatte se il container prende una max-width)
 - **Moduli custom di progetto**: (nome → gruppo ACF → twig → note)
 - Pagina libreria moduli (seed): (ID/slug)
 
