@@ -8,7 +8,6 @@
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/functions/config.php';
 require_once __DIR__ . '/functions/twig.php';
-require_once __DIR__ . '/functions/avif.php';
 require_once __DIR__ . '/functions/acf.php';
 require_once __DIR__ . '/functions/blocks.php';
 require_once __DIR__ . '/functions/custom.php';
@@ -18,6 +17,9 @@ require_once __DIR__ . '/functions/setup.php';
 require_once __DIR__ . '/functions/enqueue.php';
 
 Timber\Timber::init();
+
+// Responsive images: AVIF/WebP in the background, <picture> from the image() macro (zenotds/timber-avif).
+TimberAVIF\Plugin::load();
 
 // Sets the directories (inside your theme) to find .twig files.
 Timber::$dirname = [ 'templates' ];

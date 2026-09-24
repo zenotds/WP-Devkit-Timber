@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1682714f5e03ff07f1999af124c48623",
+    "content-hash": "8a2ac55a841b931cbabc94c58ed3fbff",
     "packages": [
         {
             "name": "symfony/deprecation-contracts",
@@ -441,6 +441,47 @@
                 }
             ],
             "time": "2026-07-03T20:44:34+00:00"
+        },
+        {
+            "name": "zenotds/timber-avif",
+            "version": "v7.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/zenotds/timber-avif.git",
+                "reference": "a5ede0cffcd67c6bf1e54d6656c7a2c329c24d08"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/zenotds/timber-avif/zipball/a5ede0cffcd67c6bf1e54d6656c7a2c329c24d08",
+                "reference": "a5ede0cffcd67c6bf1e54d6656c7a2c329c24d08",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.1",
+                "timber/timber": "^2.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "TimberAVIF\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Francesco Zeno Selva",
+                    "email": "francesco.selva@bizen.it"
+                }
+            ],
+            "description": "Responsive AVIF/WebP images for Timber 2, converted in the background and served from a <picture>.",
+            "homepage": "https://github.com/zenotds/timber-avif",
+            "support": {
+                "source": "https://github.com/zenotds/timber-avif/tree/v7.0.0",
+                "issues": "https://github.com/zenotds/timber-avif/issues"
+            },
+            "time": "2026-09-24T09:01:13+00:00"
         }
     ],
     "packages-dev": [],

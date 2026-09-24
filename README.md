@@ -10,7 +10,7 @@ Opinionata: fa poche scelte, ma le fa in modo esplicito e le documenta.
 - ⚡ **esbuild** — rebuild incrementali, CSS iniettato senza ricaricare la pagina
 - 🧩 **Libreria moduli** — 16 moduli ACF flexible content: 2 attivi, 14 in dispensa da cui copiare
 - 🧱 **Blocchi Gutenberg ACF** — boilerplate opzionale (API v3) renderizzato da Timber
-- 🖼️ **Timber AVIF 6.0** — `srcset` a descrittori `w` su larghezze canoniche condivise, generazione on demand con coda in background, admin tradotto
+- 🖼️ **Timber AVIF 7** — pacchetto Composer: `srcset` a descrittori `w` su larghezze canoniche condivise, conversione in background, nessun lavoro sulle immagini durante il render
 - 📦 **Script modulari** — moduli ES6 tree-shakeable per i pattern UI ricorrenti
 
 ## 🚀 Avvio rapido
@@ -64,7 +64,6 @@ tuo-tema/
 │   └── make-module.mjs   # Scaffolder moduli flexible
 ├── functions/            # Logica PHP, un file per responsabilità
 │   ├── acf.php           # Setup e personalizzazioni ACF
-│   ├── avif.php          # TimberAVIF: conversione AVIF/WebP
 │   ├── blocks.php        # Blocchi Gutenberg / ACF
 │   ├── config.php        # Scelte per progetto (namespace, flag Gutenberg)
 │   ├── custom.php        # Varie
@@ -73,7 +72,6 @@ tuo-tema/
 │   ├── menus.php         # Registrazione menu
 │   ├── setup.php         # Timber Starter e contesto globale
 │   └── twig.php          # Filtri e funzioni Twig
-├── languages/            # .mo/.po/.pot dell'admin di Timber AVIF
 ├── library/              # Dispensa: moduli pronti ma inerti finché non li copi
 ├── templates/            # Template Twig
 ├── devkit.config.json    # Config di build per progetto
@@ -138,37 +136,43 @@ define('GUTENBERG_CUSTOM_BLOCKS_ENABLED', true);
 Documentazione completa in [`blocks/README.md`](blocks/README.md): salvataggio ACF JSON
 per blocco, preview nell'inserter, InnerBlocks, editor styles.
 
-## 🖼️ Immagini (Timber AVIF 6.0)
+## 🖼️ Immagini (Timber AVIF 7)
 
-`functions/avif.php` genera AVIF/WebP accanto all'originale su un **unico insieme di larghezze
-canoniche** condivise da tutto il tema, così la stessa foto riusa gli stessi file in ogni modulo.
-Le varianti mancanti si costruiscono all'upload per le larghezze più usate, poi on demand con un
-budget per richiesta, poi in coda. Admin e impostazioni in Impostazioni → Timber AVIF; la cartella
-`languages/` in root porta l'admin in italiano (senza, resta in inglese). Filtri Twig:
+Le immagini le gestisce [zenotds/timber-avif](https://github.com/zenotds/timber-avif), installato
+da Composer (`vendor/zenotds/timber-avif`) e avviato in `functions.php` con
+`TimberAVIF\Plugin::load()` accanto a `Timber::init()`. Genera le copie AVIF (o WebP) **in
+background**, su un **unico insieme di larghezze canoniche** che registra come size di WordPress:
+la stessa foto riusa gli stessi file in ogni modulo, e il render legge solo i metadati, non
+converte né ridimensiona mai. Finché un'immagine non è convertita si serve il JPEG, completo.
+Impostazioni, strumenti e coda in Impostazioni → Timber AVIF; l'admin è tradotto dal pacchetto.
 
-```twig
-{{ image|toavif }}              {# AVIF o originale #}
-{{ image|avif_src(800, 600) }}  {# resize + AVIF #}
-{{ image|best_src(800, 600) }}  {# AVIF > WebP > originale #}
-```
-
-La macro `image()` in `templates/partial/macros.twig` costruisce un `<picture>` con `srcset` a
-descrittori `w` e un solo `<source>` per il formato moderno. **`sizes` è la larghezza CSS a cui
-l'immagine viene mostrata, non un elenco di pixel**: si ricava leggendo la griglia attorno alla
-chiamata e deve dire il vero, perché è l'unica cosa su cui il browser sceglie il candidato —
-sovrastimarla fa scaricare byte inutili, sottostimarla dà un'immagine sfocata, e in nessuno dei
-due casi c'è un errore a segnalarlo. `ratio` croppa lato server e serve solo dove il rapporto
-dell'originale è lontano da come viene mostrato: di norma il taglio lo fa `object-cover`.
+La macro `image()` in `templates/partial/macros.twig` delega a quella del pacchetto
+(`@timber-avif/macros.twig`), quindi aggiornare il pacchetto aggiorna anche la macro. Costruisce un
+`<picture>` con `srcset` a descrittori `w` e un solo `<source>` per il formato moderno. **`sizes` è
+la larghezza CSS a cui l'immagine viene mostrata, non un elenco di pixel**: si ricava leggendo la
+griglia attorno alla chiamata e deve dire il vero, perché è ciò su cui il browser sceglie il
+candidato. Sulle immagini lazy la macro antepone `auto`, così i browser che lo supportano misurano la
+larghezza reale e usano `sizes` solo come riserva. `ratio` croppa lato server e serve solo dove il
+rapporto dell'originale è lontano da come viene mostrato: di norma il taglio lo fa `object-cover`.
 Le macro `mp4()` ed `embed()` producono il markup video per vLitejs.
 
-**La qualità non è confrontabile tra codec.** AVIF 75 è già oltre JPEG 95 come resa percepita, e
-portare l'AVIF a 90 triplica il peso per una differenza che sulle foto l'occhio non trova. La
-regola «mai sotto 90», giusta per il JPEG, qui non si trasferisce: i default sono **AVIF 75 ·
-WebP 90 · JPEG 95**, e la qualità JPEG vale per ogni resize che WordPress e Timber generano, non
-solo per gli upload.
+Per ciò che non può essere un `<picture>` — il poster di un video, uno sfondo CSS, un segnaposto
+sfocato — c'è un solo filtro:
 
-Il devkit distribuisce Timber AVIF già integrato. La sorgente è [zenotds/timber-avif](https://github.com/zenotds/timber-avif),
-da cui si prende `avif.php` per integrarlo a mano in un tema esistente.
+```twig
+{{ poster|best_src(1280, 720) }}   {# la larghezza ≥ 1280 più piccola, croppata a 16:9 #}
+{{ cover|best_src(96) }}           {# un segnaposto da 96px, costruito su richiesta #}
+```
+
+Le immagini nei contenuti (editor e campi WYSIWYG) ricevono il loro `<picture>` dal pacchetto, e
+con WP Rocket la cache delle pagine viene svuotata quando le loro immagini sono pronte.
+
+**La qualità non è confrontabile tra codec.** AVIF 75 è già oltre JPEG 95 come resa percepita, e
+portare l'AVIF a 90 triplica il peso per una differenza che sulle foto l'occhio non trova. I default
+sono **AVIF 75 · WebP 90 · JPEG 82**: il JPEG è solo la riserva per i browser senza AVIF.
+
+Aggiornare il pacchetto in un sito: `composer update zenotds/timber-avif`. Portare un sito dalla v6
+(`functions/avif.php`): [MIGRATION.md del pacchetto](https://github.com/zenotds/timber-avif/blob/v7/MIGRATION.md#from-v61x-to-v70).
 
 ## 🌐 Oggetto request
 
@@ -257,6 +261,17 @@ sta nel CSS (`.nav-item.active`) mentre la base sta nelle utility del template
 Incluso un config Biome che gestisce la sintassi Tailwind 4.
 
 ## 📝 Changelog
+
+### Non rilasciato — Timber AVIF 7
+
+- 🖼️ Timber AVIF passa da file copiato nel tema (`functions/avif.php`, 6.0) a pacchetto Composer:
+  `zenotds/timber-avif` `^7.0` dal repository GitHub, avviato con `TimberAVIF\Plugin::load()`
+- 🧩 La macro `image()` delega a `@timber-avif/macros.twig`: stesse chiamate, in più `disclosure`
+  e `sizes="auto"` sulle immagini lazy
+- 🗑️ Via `functions/avif.php` e `languages/` in root: le traduzioni dell'admin arrivano col pacchetto
+- 🎚️ JPEG di default a 82 (era 95): con la v7 l'AVIF parte dal file a dimensione piena, il JPEG è
+  solo la riserva
+- ⚠️ Rimossi `|toavif`, `|avif_src`, `|webp_src` e `image.avif`/`.webp`/`.best`; resta `|best_src`
 
 ### v8.0 — Immagini responsive, difetti a monte, potatura (corrente)
 

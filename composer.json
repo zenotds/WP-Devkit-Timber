@@ -14,10 +14,15 @@
 		{
 			"type": "composer",
 			"url": "https://wpackagist.org"
+		},
+		{
+			"type": "vcs",
+			"url": "https://github.com/zenotds/timber-avif"
 		}
 	],
 	"require": {
-		"timber/timber": "^2.3"
+		"timber/timber": "^2.3",
+		"zenotds/timber-avif": "^7.0"
 	},
 	"config": {
 		"allow-plugins": {

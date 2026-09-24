@@ -38,7 +38,7 @@ Rispondere a Francesco **in italiano**.
 ## Struttura
 
 ```
-functions/   PHP a responsabilità singola: config, setup, twig, acf, forms, menus, enqueue, custom, avif, blocks
+functions/   PHP a responsabilità singola: config, setup, twig, acf, forms, menus, enqueue, custom, blocks
              (+ logic.php da creare per query/logica di dominio del progetto)
 templates/   Twig: base.twig → partial/ (header, menu, footer, macros, pagination) → components/
              (block-*.twig, un file per layout flexible) → html/ tools/ + cartelle feature di progetto
@@ -48,7 +48,6 @@ dev/css/     styles.css (importer + @theme) → base/ layout/ partial/ component
 dev/js/      scripts.js (entry + init) + custom/custom.js (utility riusabili)
 assets/      output compilato — mai editare a mano
 acf-json/    field group versionati + CPT/tassonomie/options di progetto
-languages/   .mo/.po/.pot dell'admin di Timber AVIF (textdomain `timber-avif`)
 ```
 
 - PHP: `StarterSite extends Timber\Site`; contesto globale con `settings` (ACF options via
@@ -70,7 +69,7 @@ Ogni valore da cambiare a inizio progetto ha UN punto di modifica (checklist com
 | Palette e tipografia | blocco `@theme` in `dev/css/styles.css` (token funzionali, vedi CSS) |
 | Palette editor WYSIWYG | `editor_color_palette()` in `functions/acf.php` (allineata ai token) |
 | Font | `dev/css/base/fonts.css` + preload in `functions/enqueue.php` |
-| Lingua dell'admin Timber AVIF | `languages/` in root (il `.mo` italiano c'è già; senza, l'admin resta in inglese) |
+| Immagini (AVIF/WebP, larghezze, qualità) | pacchetto `zenotds/timber-avif` (Composer), avviato in `functions.php`; impostazioni in Impostazioni → Timber AVIF |
 | FontAwesome Pro | aggiunta manuale: CSS in `dev/css/fontawesome/`, woff2 in `assets/webfonts/`, scommentare gli import in `styles.css` |
 
 ## Build
@@ -151,9 +150,10 @@ Ogni valore da cambiare a inizio progetto ha UN punto di modifica (checklist com
 - Macro in `partial/macros.twig`: `image()` (picture con `srcset` a descrittori `w`;
   `sizes` è la **larghezza CSS** a cui l'immagine viene mostrata, derivata dalla griglia attorno alla
   chiamata, non un elenco di pixel; `ratio` croppa lato server solo dove serve davvero, `max` cappa i
-  candidati, `atf: true` per fetchpriority), `mp4()` (poster nativo per LCP), `embed()`.
+  candidati, `atf: true` per fetchpriority; delega a `@timber-avif/macros.twig` del pacchetto),
+  `mp4()` (poster nativo per LCP), `embed()`.
 - Filtri custom (functions/twig.php): `|svg`, `|slug`, `|size`, `|video_src/provider/id`; da
-  `functions/avif.php` `|toavif`, `|avif_src/webp_src/best_src` e la funzione `image_sources()`;
+  Timber AVIF `|best_src(w, h)` (poster, sfondi, segnaposto: dove non serve un `<picture>`) e la funzione `image_sources()`;
   funzioni `get_field()`, `uniqueid()`, `module_posts()`.
 - CF7: `{% apply shortcodes %}[contact-form-7 id="{{ form.ID }}"]{% endapply %}`, campo ACF
   `post_object` su `wpcf7_contact_form`.

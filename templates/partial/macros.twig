@@ -1,27 +1,9 @@
-{# Responsive image: <picture> with a w-descriptor srcset and a single <source> for the modern format (see avif.php) #}
-{# `sizes` is the image's CSS width, not a list of pixel values: it must be accurate or the browser picks the wrong candidate #}
-{# `ratio` crops server-side, and is only worth it where the original's aspect ratio is far from how it is displayed: normally object-cover does the cropping #}
+{# Responsive image: <picture> with a w-descriptor srcset and a single <source> for the modern format. #}
+{# The macro ships with zenotds/timber-avif, so updating the package updates it: options and docs in its README. #}
+{# `sizes` is the image's CSS width, not a list of pixel values: it must be accurate or the browser picks the wrong candidate. #}
 {% macro image(image, options = {}) %}
-	{% set config = {
-		sizes: '100vw',
-		widths: [],
-		max: null,
-		ratio: null,
-		pictureClass: '',
-		imgClass: 'object-cover object-center h-full w-full mx-auto',
-		atf: false,
-		alt: null
-	}|merge(options) %}
-
-	{% set data = image_sources(image, { widths: config.widths, max: config.max, ratio: config.ratio }) %}
-
-	{% if data.ok %}
-		{% set altText = config.alt ?? (image.alt is defined and image.alt ? image.alt : (image.title is defined ? image.title : '')) %}
-		<picture class="picture {{ config.pictureClass }}">
-			{% if data.modern %}<source type="{{ data.modern.type }}" srcset="{{ data.modern.srcset }}" sizes="{{ config.sizes }}">{% endif %}
-			<img{% if config.imgClass %} class="{{ config.imgClass }}"{% endif %} src="{{ data.src }}"{% if data.srcset %} srcset="{{ data.srcset }}" sizes="{{ config.sizes }}"{% endif %} alt="{{ altText }}"{% if config.atf %} fetchpriority="high"{% else %} loading="lazy" decoding="async"{% endif %}{% if data.width %} width="{{ data.width }}"{% endif %}{% if data.height %} height="{{ data.height }}"{% endif %}>
-		</picture>
-	{% endif %}
+	{% import '@timber-avif/macros.twig' as tavif %}
+	{{ tavif.image(image, options) }}
 {% endmacro %}
 
 {# Self-hosted MP4. options: poster, title, class, visual (hero marker), background (muted + loop + no PiP) #}
