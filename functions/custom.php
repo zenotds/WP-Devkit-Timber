@@ -6,7 +6,7 @@ add_filter('doing_it_wrong_trigger_error', function () {
 
 // Le sole size di WordPress che restano sono thumbnail (griglia dell'admin) e medium: il resto lo coprono le larghezze canoniche che Timber AVIF registra come size proprie (tavif-*), quindi le size intermedie sarebbero solo file in più a ogni upload.
 // Anche 1536x1536 e 2048x2048 si tolgono di qui: un remove_image_size() su init sarebbe un secondo posto che dice la stessa cosa. Le tavif-* non vanno tolte: sono le varianti del srcset.
-// La qualità JPEG la governa Timber AVIF (impostazione jpeg_quality, default 82): un filtro qui la sovrascriverebbe a seconda dell'ordine di registrazione.
+// La qualità JPEG la governa Timber AVIF (impostazione jpeg_quality, default 82): un filtro qui non avrebbe effetto, perché Timber AVIF aggancia jpeg_quality a priorità 20, dopo il tema.
 add_filter('intermediate_image_sizes', function ($sizes) {
 	return array_diff($sizes, ['medium_large', 'large', '1536x1536', '2048x2048']);
 });

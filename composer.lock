@@ -444,16 +444,16 @@
         },
         {
             "name": "zenotds/timber-avif",
-            "version": "v7.0.0",
+            "version": "v7.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/zenotds/timber-avif.git",
-                "reference": "a5ede0cffcd67c6bf1e54d6656c7a2c329c24d08"
+                "reference": "0f9c78c2d02d785f085884377d8ccf8949134d44"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/zenotds/timber-avif/zipball/a5ede0cffcd67c6bf1e54d6656c7a2c329c24d08",
-                "reference": "a5ede0cffcd67c6bf1e54d6656c7a2c329c24d08",
+                "url": "https://api.github.com/repos/zenotds/timber-avif/zipball/0f9c78c2d02d785f085884377d8ccf8949134d44",
+                "reference": "0f9c78c2d02d785f085884377d8ccf8949134d44",
                 "shasum": ""
             },
             "require": {
@@ -478,10 +478,10 @@
             "description": "Responsive AVIF/WebP images for Timber 2, converted in the background and served from a <picture>.",
             "homepage": "https://github.com/zenotds/timber-avif",
             "support": {
-                "source": "https://github.com/zenotds/timber-avif/tree/v7.0.0",
+                "source": "https://github.com/zenotds/timber-avif/tree/v7.0.2",
                 "issues": "https://github.com/zenotds/timber-avif/issues"
             },
-            "time": "2026-09-24T09:01:13+00:00"
+            "time": "2026-09-24T12:36:28+00:00"
         }
     ],
     "packages-dev": [],
