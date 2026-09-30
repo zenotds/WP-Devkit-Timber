@@ -83,7 +83,8 @@ function ensurePlayerId(el) {
 function initAlpine() {
 	Alpine.plugin(collapse);
 	Alpine.plugin(focus);
-	window.Alpine = Alpine.start();
+	window.Alpine = Alpine;
+	Alpine.start();
 }
 
 // Lenis driven by GSAP's ticker (single rAF loop) and synced with

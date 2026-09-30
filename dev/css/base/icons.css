@@ -1,0 +1,9 @@
+/* Icone SVG inline (functions/icons.php): alte quanto il testo, larghe 1.25em come i glifi di Font Awesome 7 */
+.svg-inline--fa {
+	display: inline-block;
+	box-sizing: content-box;
+	width: 1.25em;
+	height: 1em;
+	overflow: visible;
+	vertical-align: -0.125em;
+}

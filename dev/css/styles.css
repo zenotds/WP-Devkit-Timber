@@ -14,12 +14,7 @@
 @import "./base/fonts";
 @import "./base/typography" layer(components);
 @import "./base/custom" layer(components);
-
-/* FontAwesome Pro — aggiunta manuale per progetto:
-   copia i CSS in dev/css/fontawesome/ e i woff2 in assets/webfonts/, poi scommenta */
-/* @import "./fontawesome/fontawesome"; */
-/* @import "./fontawesome/solid"; */
-/* @import "./fontawesome/brands"; */
+@import "./base/icons" layer(components);
 
 /* SwiperJS */
 @import "../../node_modules/swiper/swiper" layer(components);
@@ -95,9 +90,3 @@
 /* Tailwind plugins */
 @plugin "@tailwindcss/typography";
 @plugin "@tailwindcss/forms";
-
-/* Root */
-:root {
-	--font-icons: "Font Awesome 7 Pro";
-	--font-brands: "Font Awesome 7 Brands";
-}

@@ -1,4 +1,4 @@
-# Framework di sviluppo — WP DevKit Timber v8.0 (Zeno / Bizen)
+# Framework di sviluppo — WP DevKit Timber v8.1 (Zeno / Bizen)
 
 Base **riutilizzabile** per temi WordPress + ACF Pro + Timber 2 + Tailwind 4.
 Distillata da temi di produzione.
@@ -38,7 +38,7 @@ Rispondere a Francesco **in italiano**.
 ## Struttura
 
 ```
-functions/   PHP a responsabilità singola: config, setup, twig, acf, forms, menus, enqueue, custom, blocks
+functions/   PHP a responsabilità singola: config, setup, twig, acf, forms, menus, enqueue, icons, custom, blocks
              (+ logic.php da creare per query/logica di dominio del progetto)
 templates/   Twig: base.twig → partial/ (header, menu, footer, macros, pagination) → components/
              (block-*.twig, un file per layout flexible) → html/ tools/ + cartelle feature di progetto
@@ -51,7 +51,9 @@ acf-json/    field group versionati + CPT/tassonomie/options di progetto
 ```
 
 - PHP: `StarterSite extends Timber\Site`; contesto globale con `settings` (ACF options via
-  `get_fields('options')`), menu, breadcrumbs Yoast, `request` (GET/POST sanitizzati).
+  `get_fields('options')`, in object cache per lingua: la svuotano i salvataggi e ogni scrittura
+  di `options_*`, wp-cli compreso; un UPDATE SQL diretto no → `wp cache flush`), menu,
+  breadcrumbs Yoast, `request` (GET/POST sanitizzati).
 - **Naming**: il codice framework ha nomi senza prefisso progetto (`theme_*`, `acf_*`, `editor_*`,
   `custom_*`, `hidelabel_*`) → si copia com'è. Ciò che è specifico del sito usa il prefisso del
   progetto: funzioni di dominio in `functions/logic.php` (es. `mobi_*`) e costanti-dato.
@@ -70,7 +72,7 @@ Ogni valore da cambiare a inizio progetto ha UN punto di modifica (checklist com
 | Palette editor WYSIWYG | `editor_color_palette()` in `functions/acf.php` (allineata ai token) |
 | Font | `dev/css/base/fonts.css` + preload in `functions/enqueue.php` |
 | Immagini (AVIF/WebP, larghezze, qualità) | pacchetto `zenotds/timber-avif` (Composer), avviato in `functions.php`; impostazioni in Impostazioni → Timber AVIF |
-| FontAwesome Pro | aggiunta manuale: CSS in `dev/css/fontawesome/`, woff2 in `assets/webfonts/`, scommentare gli import in `styles.css` |
+| Icone Font Awesome | SVG inline da `functions/icons.php`: nei template `<i class="far fa-nome"></i>` (`fab` per i brand); pacchetto Pro in `dev/fontawesome/`, `npm run make:icons` genera `assets/icons/` (entrambi fuori da git); negli pseudo-elementi `mask: url("icon:regular/nome")`, che il build incorpora come data URI |
 
 ## Build
 

@@ -431,7 +431,7 @@
                     "name": "icon",
                     "aria-label": "",
                     "type": "text",
-                    "instructions": "",
+                    "instructions": "Nome del brand Font Awesome senza prefisso, es. <code>facebook</code>",
                     "required": 0,
                     "conditional_logic": 0,
                     "wrapper": {
@@ -491,5 +491,5 @@
     "description": "",
     "show_in_rest": 0,
     "acfml_field_group_mode": "localization",
-    "modified": 1740580588
+    "modified": 1790765205
 }

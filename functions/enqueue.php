@@ -39,6 +39,17 @@ function theme_enqueue_assets()
 	// }
 }
 
+// Small plugin stylesheets printed inline in the head (wp_maybe_inline_styles): unregistered handles are skipped, past styles_inline_size_limit they stay a <link>
+add_action('wp_enqueue_scripts', function () {
+	foreach (['contact-form-7'] as $handle) {
+		$src = wp_styles()->registered[$handle]->src ?? '';
+		$path = str_replace([plugins_url(), content_url()], [WP_PLUGIN_DIR, WP_CONTENT_DIR], strtok($src, '?') ?: '');
+		if ($src && is_file($path)) {
+			wp_style_add_data($handle, 'path', $path);
+		}
+	}
+}, 20);
+
 // Preload critical assets
 add_action('wp_head', 'theme_preload_assets', 1);
 
@@ -47,10 +58,9 @@ function theme_preload_assets()
 	$theme_version = wp_get_theme()->get('Version');
 ?>
 	<link rel="preload" href="<?php echo get_template_directory_uri(); ?>/assets/css/styles.min.css?ver=<?php echo $theme_version; ?>" as="style">
-	<?php // Font preloads: uncomment once the woff2 files are in /assets/webfonts/ (e.g. FontAwesome Pro, added per project) ?>
+	<?php // Font preload: uncomment once the project woff2 is in /assets/webfonts/ (see dev/css/base/fonts.css) ?>
 	<?php /*
-	<link rel="preload" href="<?php echo get_template_directory_uri(); ?>/assets/webfonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="<?php echo get_template_directory_uri(); ?>/assets/webfonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="<?php echo get_template_directory_uri(); ?>/assets/webfonts/font-name-variable.woff2" as="font" type="font/woff2" crossorigin>
 	*/ ?>
 <?php
 }

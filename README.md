@@ -174,6 +174,50 @@ sono **AVIF 75 · WebP 90 · JPEG 82**: il JPEG è solo la riserva per i browser
 Aggiornare il pacchetto in un sito: `composer update zenotds/timber-avif`. Portare un sito dalla v6
 (`functions/avif.php`): [MIGRATION.md del pacchetto](https://github.com/zenotds/timber-avif/blob/v7/MIGRATION.md#from-v61x-to-v70).
 
+## 🔣 Icone (Font Awesome come SVG inline)
+
+Niente webfont: nei template e nei campi ACF si scrive `<i class="far fa-arrow-right"></i>` e
+`functions/icons.php`, sull'HTML compilato da Timber, sostituisce ogni `<i>` vuoto con l'SVG di
+`assets/icons/<stile>/<nome>.svg`. Classi e attributi passano all'`<svg>`, `:class` di Alpine
+compreso, e con WP Rocket la conversione avviene una volta per pagina in cache. La pagina contiene
+solo le icone che usa, qualunque icona scelga l'editor.
+
+Il devkit non contiene icone. Per ogni progetto:
+
+1. copia il pacchetto Font Awesome Pro in `dev/fontawesome/`: bastano `svgs/<stile>/` degli stili da
+   generare e `css/fontawesome.css` + `css/brands.css` (gli alias). Il pacchetto intero non pesa sul
+   build: watch, Tailwind e Biome ignorano la cartella
+2. `npm run make:icons` genera `assets/icons/`: SVG di **regular** e **brands**, mappa degli alias
+   (`fa-times` → `xmark`) e licenza. Altri stili: `npm run make:icons -- regular brands solid`
+
+Pacchetto e icone generate sono fuori da git (il repo del devkit è pubblico): `assets/icons/` va
+caricata sul server a ogni deploy. Se manca, `npm run watch` e `npm run build` lo segnalano.
+
+- **Stile**: i template usano `far`, i social `fab`. Un'icona in uno stile non generato ricade su
+  regular, poi solid e brands
+- **Dimensione**: `dev/css/base/icons.css` dà a `.svg-inline--fa` altezza 1em e larghezza 1.25em
+  come i glifi di Font Awesome 7. Sta in `components`, quindi le utility vincono: `text-2xl` per
+  la dimensione, `w-5` per la larghezza, `animate-spin` al posto di `fa-spin`
+- **Negli pseudo-elementi** (elenchi dei WYSIWYG, decorazioni) l'icona è una maschera: la forma
+  viene dall'SVG, il colore da `background-color`. Il build sostituisce `url("icon:stile/nome")`
+  con l'SVG di `assets/icons/` come data URI (accetta anche gli alias): nessuna richiesta in più,
+  nessun percorso da indovinare, nessun problema di CORS con la CDN. Un'icona mancante diventa
+  `none` e il build lo segnala. Nei template resta meglio un `<i>`
+
+  ```css
+  .check-list li::before {
+    content: "";
+    width: 1em;
+    height: 1em;
+    background-color: var(--color-accent);
+    mask: url("icon:regular/check") center / contain no-repeat;
+  }
+  ```
+
+- **Senza Font Awesome**: non copiare il pacchetto e metti in `assets/icons/regular/` gli SVG di un
+  altro set con i nomi usati dai template (`bars`, `xmark`, `chevron-down`…); oppure togli gli `<i>`
+  dai template e il `require` di `functions/icons.php`
+
 ## 🌐 Oggetto request
 
 In ogni template Twig è disponibile una request sanitizzata:
@@ -211,6 +255,44 @@ Per convenzione ogni `.js` e ogni `.css` top-level in `dev/` diventa un bundle i
   pagina: menu aperti, modali, posizione di scroll. Twig, PHP e JS fanno reload pieno
 - **Sourcemap solo in sviluppo** — in produzione esporrebbero i sorgenti
 - **Versioning automatico** in `style.css` e cache busting via enqueue WordPress
+
+## ✅ Go-live
+
+Già nel codice: opzioni ACF in object cache, CSS di Contact Form 7 inline, WP Rocket con
+Automatic Lazy Rendering spento e asset del tema esclusi dal minify. Per ogni sito:
+
+- [ ] **Immagini**: un solo `atf: true` per pagina, sull'immagine LCP. Una seconda immagine in
+  `fetchpriority="high"` le ruba banda
+- [ ] **`wp-config.php`**: `WP_DEBUG` a `false`. `DISABLE_WP_CRON` a `true` più un cron di sistema
+  ogni 5 minuti su `wp-cron.php`: senza, il preload di WP Rocket avanza solo quando arrivano visite
+- [ ] **`.htaccess`**: redirect a https e www in testa, prima del blocco WordPress. Fatto da un
+  plugin costa un avvio di PHP a ogni richiesta. Dietro un proxy che termina TLS (Cloudflare,
+  load balancer) va letto `%{HTTP:X-Forwarded-Proto}` al posto di `%{HTTPS}`
+
+  ```apache
+  RewriteEngine On
+  RewriteCond %{HTTPS} off [OR]
+  RewriteCond %{HTTP_HOST} !^www\. [NC]
+  RewriteRule ^ https://www.example.com%{REQUEST_URI} [L,R=301]
+  ```
+
+- [ ] **WP Rocket**:
+  - *Cache separata per dispositivi mobili* spenta, salvo temi che usano `wp_is_mobile()`: con la
+    cache mobile separata WP Rocket non scrive le regole `.htaccess` e ogni pagina in cache passa
+    da PHP
+  - *Rimozione del CSS inutilizzato* e *caricamento asincrono del CSS* spenti
+  - *Preload fonts* spento: il tema precarica già i suoi font (`theme_preload_assets`), quello
+    automatico usa i dati raccolti dal beacon, che restano quelli del CSS di quando sono stati raccolti
+  - *Durata della cache*: prima di alzarla oltre le 10 ore di default, cerca `nonce` nell'HTML in
+    cache e verifica chi lo usa. Un nonce scaduto rompe le chiamate AJAX che ne dipendono
+  - Dopo ogni deploy: *Svuota la cache* per **tutte** le lingue. Svuotandone una sola i file
+    minificati restano
+  - Dopo un deploy che cambia CSS, font o immagini sopra la piega: prima *Clear Priority Elements*
+    (barra di amministrazione, menu WP Rocket), poi *Svuota la cache*. I dati del beacon (immagine
+    LCP, font da precaricare) si azzerano da soli solo al cambio tema, dei permalink o di versione di
+    WP Rocket
+- [ ] **Icone**: `assets/icons/` caricata sul server (è fuori da git)
+- [ ] **Plugin di sviluppo** disattivati in produzione (Query Monitor, Yoast Test Helper…)
 
 ## 🎨 Convenzioni CSS
 
@@ -262,7 +344,7 @@ Incluso un config Biome che gestisce la sintassi Tailwind 4.
 
 ## 📝 Changelog
 
-### Non rilasciato — Timber AVIF 7
+### v8.1 — Timber AVIF 7, icone SVG, go-live (corrente)
 
 - 🖼️ Timber AVIF passa da file copiato nel tema (`functions/avif.php`, 6.0) a pacchetto Composer:
   `zenotds/timber-avif` `^7.0` dal repository GitHub, avviato con `TimberAVIF\Plugin::load()`
@@ -272,8 +354,25 @@ Incluso un config Biome che gestisce la sintassi Tailwind 4.
 - 🎚️ JPEG di default a 82 (era 95): con la v7 l'AVIF parte dal file a dimensione piena, il JPEG è
   solo la riserva
 - ⚠️ Rimossi `|toavif`, `|avif_src`, `|webp_src` e `image.avif`/`.webp`/`.best`; resta `|best_src`
+- ⚡ Opzioni ACF (`settings` nel context) in object cache per lingua, svuotata a ogni salvataggio e
+  a ogni scrittura di `options_*` (wp-cli compreso): con Redis evita di riformattare tutte le opzioni
+  a ogni render (misurati ~70 ms su 47 campi)
+- ⚡ CSS di Contact Form 7 inline nell'head invece di un `<link>` render-blocking
+- ⚡ WP Rocket: Automatic Lazy Rendering spento, perché `content-visibility: auto` senza
+  `contain-intrinsic-size` collassa le sezioni fuori schermo (layout shift, posizioni di
+  ScrollTrigger sbagliate). Asset del tema esclusi dal minify: sono già minificati, e svuotando
+  una lingua sola restava servito il minificato vecchio
+- 🐛 `window.Alpine` era `undefined`: `Alpine.start()` non restituisce l'istanza
+- 📋 Checklist di go-live nel README
+- 🔣 Icone Font Awesome come SVG inline al posto del webfont (`functions/icons.php`,
+  `npm run make:icons`): nessun font da 100-300 KB a stile nel percorso critico e nessuna icona
+  invisibile durante il caricamento. Template su `far` (regular) e `fab`; via gli import FA
+  commentati, `--font-icons`/`--font-brands` e i preload FA in `enqueue.php`
+- 🔣 Pallino degli elenchi in `.typo-r` disegnato in CSS invece del glifo `circle-small` del font
+- 🔣 Icone negli pseudo-elementi: `url("icon:stile/nome")` nei CSS diventa l'SVG come data URI, da
+  usare come `mask`
 
-### v8.0 — Immagini responsive, difetti a monte, potatura (corrente)
+### v8.0 — Immagini responsive, difetti a monte, potatura
 
 Due mesi e mezzo di uso continuo della 7.5 su un tema di produzione hanno prodotto un elenco di
 difetti del framework e un gruppo di soluzioni che si sono rivelate convenzioni. Questa versione le

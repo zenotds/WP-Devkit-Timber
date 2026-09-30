@@ -162,7 +162,7 @@
 					"name": "icon",
 					"aria-label": "",
 					"type": "text",
-					"instructions": "",
+					"instructions": "Nome Font Awesome con prefisso, es. <code>fa-couch</code>. Stile regular di default; un altro stile (es. <code>fa-solid fa-couch</code>) solo se generato con make:icons",
 					"required": 0,
 					"conditional_logic": 0,
 					"wrapper": {
@@ -444,5 +444,5 @@
 	"active": false,
 	"description": "",
 	"show_in_rest": 0,
-	"modified": 1783379133
+	"modified": 1790767481
 }

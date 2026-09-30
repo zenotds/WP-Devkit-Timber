@@ -17,6 +17,15 @@ class StarterSite extends Site
 		add_filter('timber/twig', array($this, 'add_to_twig'));
 		add_filter('timber/twig/environment/options', [$this, 'update_twig_environment_options']);
 
+		// Cache delle opzioni: svuotata dopo il salvataggio di ACF (priorità 10), dalle modifiche ai contenuti che le opzioni possono citare e da ogni scrittura di options_* fatta fuori da acf/save_post (wp-cli, update_field da codice)
+		add_action('acf/save_post', array($this, 'flush_settings'), 20);
+		foreach (['save_post', 'deleted_post', 'edit_attachment', 'edited_term', 'delete_term'] as $hook) {
+			add_action($hook, array($this, 'flush_settings'));
+		}
+		foreach (['added_option', 'updated_option', 'deleted_option'] as $hook) {
+			add_action($hook, array($this, 'flush_settings_option'));
+		}
+
 		parent::__construct();
 	}
 
@@ -77,11 +86,43 @@ class StarterSite extends Site
 	}
 
 	/**
+	 * Opzioni ACF della lingua corrente, in object cache fino al prossimo salvataggio. Senza cache persistente vale per la richiesta.
+	 */
+	private function get_settings()
+	{
+		$language = function_exists('acf_get_setting') ? (string) acf_get_setting('current_language') : '';
+		$cached = wp_cache_get('settings', THEME_NAMESPACE);
+		$cached = is_array($cached) ? $cached : [];
+
+		if (!array_key_exists($language, $cached)) {
+			$cached[$language] = $this->load_settings();
+			wp_cache_set('settings', $cached, THEME_NAMESPACE, DAY_IN_SECONDS);
+		}
+
+		return $cached[$language];
+	}
+
+	public function flush_settings()
+	{
+		wp_cache_delete('settings', THEME_NAMESPACE);
+	}
+
+	/**
+	 * ACF salva le opzioni come options_<campo> (con WPML options_<lingua>_<campo>) e il riferimento come _options_<campo>, che si scrive insieme al valore.
+	 */
+	public function flush_settings_option($option)
+	{
+		if (strncmp($option, 'options_', 8) === 0) {
+			$this->flush_settings();
+		}
+	}
+
+	/**
 	 * Opzioni ACF con fallback sulla lingua di default.
 	 *
 	 * Con WPML attivo ACF legge le opzioni da `options_<lingua>` quando la lingua corrente non è quella di default (acf_get_valid_post_id): finché le opzioni della seconda lingua non sono compilate, header e footer restano senza logo, menu e testi — non tradotti, proprio assenti. Le opzioni della lingua di default riempiono le SOLE chiavi vuote, così una traduzione parziale è sempre meglio di un chrome rotto.
 	 */
-	private function get_settings()
+	private function load_settings()
 	{
 		$settings = get_fields('options') ?: [];
 

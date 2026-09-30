@@ -62,3 +62,7 @@ vendor
 .claude/settings.local.json
 .gemini
 .codex
+# Font Awesome Pro (pacchetto copiato per progetto) e icone generate da npm run make:icons
+dev/fontawesome
+assets/icons/*
+!assets/icons/.gitkeep

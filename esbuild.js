@@ -130,6 +130,24 @@ function normalizeFontPaths(files) {
 	}
 }
 
+// Avvisa se i template usano icone Font Awesome ma assets/icons/ non è stata generata: gli <i> resterebbero vuoti
+function checkIcons() {
+	const iconsDir = "./assets/icons";
+	const generated = fs.existsSync(iconsDir) && fs.readdirSync(iconsDir, { withFileTypes: true }).some((entry) => entry.isDirectory());
+	if (generated) return;
+
+	const usesIcons = ["./templates", "./blocks"].some(
+		(dir) =>
+			fs.existsSync(dir) &&
+			fs
+				.readdirSync(dir, { recursive: true })
+				.some((file) => file.endsWith(".twig") && /<i\s[^>]*class="[^"]*\bfa[a-z]?\s/.test(fs.readFileSync(path.join(dir, file), "utf8"))),
+	);
+	if (usesIcons) {
+		console.warn(`⚠️  Icone Font Awesome mancanti in ${iconsDir}/: copia il pacchetto Pro in dev/fontawesome/ e lancia npm run make:icons`);
+	}
+}
+
 // I sourcemap non si generano in produzione (esporrebbero i sorgenti): rimuove quelli
 // lasciati da build di sviluppo precedenti, altrimenti restano orfani in assets/.
 function cleanupSourcemaps() {
@@ -193,6 +211,37 @@ function entryPoints() {
 
 // Tailwind 4 risolve da sé gli @import e il prefixing (via Lightning CSS): niente
 // postcss-import né autoprefixer. Solo styles.css passa di qui, i file importati no.
+// url("icon:stile/nome") nei CSS → l'SVG di assets/icons/ come data URI (nome o alias); il prefisso che Tailwind antepone ai url relativi si scarta
+function inlineIcons(css) {
+	if (!css.includes("icon:")) return css;
+
+	const aliases = { classic: {}, brands: {} };
+	const aliasesFile = "./assets/icons/aliases.php";
+	if (fs.existsSync(aliasesFile)) {
+		const [classic = "", brands = ""] = fs.readFileSync(aliasesFile, "utf8").split("'brands' =>");
+		for (const [part, map] of [
+			[classic, aliases.classic],
+			[brands, aliases.brands],
+		]) {
+			for (const [, alias, name] of part.matchAll(/'([a-z0-9-]+)' => '([a-z0-9-]+)'/g)) map[alias] = name;
+		}
+	}
+
+	return css.replace(/url\((["']?)(?:[^"')]*\/)?icon:([a-z0-9-]+)\/([a-z0-9-]+)\1\)/g, (match, quote, style, name) => {
+		const canonical = aliases[style === "brands" ? "brands" : "classic"][name] ?? name;
+		const file = `./assets/icons/${style}/${canonical}.svg`;
+		if (!fs.existsSync(file)) {
+			console.warn(`⚠️  Icona del CSS non trovata: ${style}/${name} (npm run make:icons)`);
+			return "none";
+		}
+		const svg = fs
+			.readFileSync(file, "utf8")
+			.replace(/"/g, "'")
+			.replace(/[\r\n%#()<>?[\\\]^`{|}]/g, encodeURIComponent);
+		return `url("data:image/svg+xml,${svg}")`;
+	});
+}
+
 const postcssPlugin = {
 	name: "postcss",
 	setup(build) {
@@ -201,7 +250,7 @@ const postcssPlugin = {
 			const result = await postcss([tailwindcssPostcss()]).process(source, {
 				from: args.path,
 			});
-			return { contents: result.css, loader: "css" };
+			return { contents: inlineIcons(result.css), loader: "css" };
 		});
 	},
 };
@@ -321,6 +370,8 @@ function queueBuild({ reload = false, cssOnly = false } = {}) {
 		});
 	return buildQueue;
 }
+
+checkIcons();
 
 // Watch for file changes during development
 if (!isProduction) {

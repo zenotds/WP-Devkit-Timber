@@ -23,7 +23,7 @@
 
 - [ ] `dev/css/styles.css` → blocco `@theme`: palette (`--color-accent/light/dark/darker/body/error/focus`) e scala tipografica dai materiali design (mantieni i NOMI dei token)
 - [ ] Font: woff2 in `assets/webfonts/`, `@font-face` in `dev/css/base/fonts.css`, `--font-base` nel `@theme`, preload in `functions/enqueue.php`
-- [ ] FontAwesome Pro (se serve): CSS in `dev/css/fontawesome/`, woff2 in `assets/webfonts/`, scommenta gli import in `styles.css`
+- [ ] Font Awesome Pro: copia il pacchetto in `dev/fontawesome/` (servono `svgs/<stile>/` e `css/fontawesome.css` + `css/brands.css`) e lancia `npm run make:icons` (regular + brands; altri stili: `npm run make:icons -- regular brands solid`). Senza Font Awesome: README → Icone
 - [ ] `editor_color_palette()` in `functions/acf.php` → i colori del progetto (serve sia i campi WYSIWYG di ACF sia l'editor classico; non legge il CSS, va cambiata a mano insieme ai token)
 - [ ] **Pesi tipografici**: `body` e `.typo-r` sono a `font-weight: 400` come default del devkit — ricontrollalo contro le tavole a ogni progetto, capita spesso che il testo corrente sia Light
 
@@ -56,6 +56,7 @@
 3. Pagine con moduli flexible (parti dalla libreria, crea i moduli custom che mancano)
 4. Blog, form, SEO, fino in fondo
 5. `npm run build` prima di ogni deploy
+6. Messa online: checklist **✅ Go-live** nel README
 
 Convenzioni complete: `.claude/CLAUDE.md`. Stato del progetto: `.claude/PROJECT.md`.
 Entrambi viaggiano col devkit (sono versionati): `CLAUDE.md` resta invariato nel progetto,

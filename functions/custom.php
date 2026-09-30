@@ -71,6 +71,18 @@ function custom_wp_rocket()
 }
 add_action('init', 'custom_wp_rocket', 12);
 
+// WPRocket: Automatic Lazy Rendering off, theme assets (already minified by esbuild) excluded from minify
+add_filter('rocket_lrc_optimization', '__return_false');
+add_filter('rocket_exclude_css', 'theme_rocket_exclude_assets');
+add_filter('rocket_exclude_js', 'theme_rocket_exclude_assets');
+
+function theme_rocket_exclude_assets($files)
+{
+	$files = (array) $files;
+	$files[] = preg_quote(wp_make_link_relative(get_template_directory_uri())) . '/assets/.*';
+	return $files;
+}
+
 
 /** Testo dei moduli del flexible, per l'analisi di Yoast. Salta chiavi tecniche, valori non testuali e URL. */
 function theme_modules_text($value, array $skip): string

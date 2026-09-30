@@ -15,6 +15,7 @@ require_once __DIR__ . '/functions/forms.php';
 require_once __DIR__ . '/functions/menus.php';
 require_once __DIR__ . '/functions/setup.php';
 require_once __DIR__ . '/functions/enqueue.php';
+require_once __DIR__ . '/functions/icons.php';
 
 Timber\Timber::init();
 
