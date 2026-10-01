@@ -45,13 +45,17 @@ for (const style of styles) {
 	console.log(`   ${style}: ${files.length} icone`);
 }
 
-// Alias → nome del file, dalle regole condivise del CSS (.fa-close,.fa-times,.fa-xmark{--fa:...}): gli stili classici condividono i nomi, i brand hanno una mappa a parte. Valore tra virgolette doppie o singole (.fa-ditto{--fa:'"'}), altre dichiarazioni dopo ammesse
+// Alias → nome del file, raggruppando le classi per valore di --fa: vale sia per le regole condivise (.fa-close,.fa-times,.fa-xmark{--fa:...}) sia per una regola per alias (FA 7.2+). Gli stili classici condividono i nomi, i brand hanno una mappa a parte. Valore tra virgolette doppie o singole (.fa-ditto{--fa:'"'}), altre dichiarazioni dopo ammesse
 function aliases(cssFile, dir) {
 	const map = {};
 	if (!fs.existsSync(cssFile) || !fs.existsSync(dir)) return map;
 	const css = fs.readFileSync(cssFile, "utf8");
-	for (const [, selectors] of css.matchAll(/([^{}]+)\{\s*--fa:\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')[^}]*\}/g)) {
+	const groups = new Map();
+	for (const [, selectors, value] of css.matchAll(/([^{}]+)\{\s*--fa:\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')[^}]*\}/g)) {
 		const names = [...selectors.matchAll(/\.fa-([a-z0-9-]+)/g)].map((m) => m[1]);
+		groups.set(value, [...(groups.get(value) || []), ...names]);
+	}
+	for (const names of groups.values()) {
 		const canonical = names.find((name) => fs.existsSync(path.join(dir, `${name}.svg`)));
 		if (!canonical) continue;
 		for (const name of names) if (name !== canonical) map[name] = canonical;
