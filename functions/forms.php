@@ -27,8 +27,9 @@ add_filter('wpcf7_mail_html_body', function ($body) {
 	return $body;
 });
 
-// Disable native spam filter
-add_filter('wpcf7_spam', '__return_false');
+// Spegne i controlli nativi di CF7 (nonce, che in una pagina in cache scade, e user-agent): quelli girano prima del filtro, qui si azzera il loro esito
+// Priorità 8 e non 10: Turnstile e reCAPTCHA di CF7 stanno a 9, e un azzeramento dopo di loro li renderebbe inutili
+add_filter('wpcf7_spam', '__return_false', 8);
 
 // Sostituisce markup checkbox e radio
 // L'id porta il prefisso dello unit-tag del form e il valore: senza il prefisso due form nella stessa pagina collidono su `privacy`/`marketing` e la label spunta la casella dell'altro; senza il valore tutti i radio di un gruppo condividono lo stesso id.
