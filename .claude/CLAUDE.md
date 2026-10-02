@@ -48,6 +48,7 @@ dev/css/     styles.css (importer + @theme) → base/ layout/ partial/ component
 dev/js/      scripts.js (entry + init) + custom/custom.js (utility riusabili)
 assets/      output compilato — mai editare a mano
 acf-json/    field group versionati + CPT/tassonomie/options di progetto
+lang/        theme.pot generato da `npm run make:pot` (+ eventuali <locale>.mo)
 ```
 
 - PHP: `StarterSite extends Timber\Site`; contesto globale con `settings` (ACF options via
@@ -318,6 +319,19 @@ Procedura di installazione in `library/README.md`.
 - **Yoast analizza `post_content`**, che su una pagina a moduli è vuoto: il ponte è
   `theme_yoast_modules_bridge()` in `functions/custom.php`, che passa il testo dei moduli al motore
   JS. ⚠️ Il testo è quello SALVATO: l'analisi si aggiorna al salvataggio, non mentre si scrive.
+
+## Traduzioni (i18n)
+
+- Stringhe del tema in **italiano**, dominio `theme` sia in PHP sia in Twig
+  (`{{ __('Testo', 'theme') }}`), caricato da `lang/` in `functions/custom.php`.
+- `npm run make:pot` → `lang/theme.pot` (versionato). `wp i18n make-pot` da solo **salta i Twig
+  in silenzio**: serve il pacchetto wp-cli `timber/wp-i18n-twig`, e lo script si ferma se manca.
+  Richiede anche `mb_ereg` (mbstring con mbregex), che alcune build (es. Lampo) non hanno: altro PHP con
+  `WP_CLI_PHP`. `library/` è esclusa: un modulo entra nel `.pot` quando viene installato.
+- WPML: si importa il `.pot` in String Translation (dominio `theme`) e si imposta la lingua del
+  dominio su italiano, altrimenti WPML tratta le stringhe come inglesi.
+- `.mo` senza WPML: `lang/<locale>.mo`, senza prefisso di dominio (convenzione di
+  `load_theme_textdomain()`).
 - Archivi tassonomia = landing crawlabili (H1/testo da campi term); filtri client-side MixItUp
   (`posts_per_page: -1`) o chip-link server-side se l'archivio è grande.
 - Voce menu ≠ H1 di pagina. Footer: voce "Credits" verso il sito dello studio,

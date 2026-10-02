@@ -10,7 +10,8 @@
 		"build": "npm run prod",
 		"make:block": "node dev/make-block.mjs",
 		"make:module": "node dev/make-module.mjs",
-		"make:icons": "node dev/make-icons.mjs"
+		"make:icons": "node dev/make-icons.mjs",
+		"make:pot": "node dev/make-pot.mjs"
 	},
 	"type": "module",
 	"author": "Francesco Selva",

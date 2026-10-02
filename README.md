@@ -49,6 +49,8 @@ Node.js 22+, PHP 8.3+, Composer, WordPress 7.0+
 | `npm run build` | `prod` | Build minificata + bump di versione in `style.css` |
 | `npm run make:module -- <slug> "<Titolo>"` | | Scaffold di un modulo flexible |
 | `npm run make:block -- <slug> "<Titolo>"` | | Scaffold di un blocco Gutenberg |
+| `npm run make:icons [-- stili...]` | | Icone Font Awesome in `assets/icons/` (vedi Icone) |
+| `npm run make:pot` | | `lang/theme.pot` dalle stringhe PHP e Twig (vedi Traduzioni) |
 
 ## 📁 Struttura
 
@@ -218,6 +220,36 @@ caricata sul server a ogni deploy. Se manca, `npm run watch` e `npm run build` l
   altro set con i nomi usati dai template (`bars`, `xmark`, `chevron-down`…); oppure togli gli `<i>`
   dai template e il `require` di `functions/icons.php`
 
+## 🌍 Traduzioni del tema
+
+Le stringhe del tema sono in **italiano** e stanno nel dominio `theme`, sia in PHP sia in Twig
+(`{{ __('Chiudi menu', 'theme') }}`). Il dominio si carica da `lang/` (`functions/custom.php`).
+
+`npm run make:pot` raccoglie tutte le stringhe in `lang/theme.pot`. Da solo `wp i18n make-pot`
+legge solo PHP e JS: i `.twig` li aggiunge il pacchetto wp-cli
+[`timber/wp-i18n-twig`](https://github.com/timber/wp-i18n-twig), da installare una volta per
+macchina:
+
+```bash
+wp package install timber/wp-i18n-twig
+```
+
+Senza il pacchetto il `.pot` uscirebbe quasi vuoto senza errori, quindi lo script si ferma. Si
+ferma anche se il PHP nel PATH non ha `mb_ereg`, perché alcune build compilano mbstring senza
+mbregex: in quel caso si indica un altro PHP con `WP_CLI_PHP=/percorso/php`. `library/` resta
+fuori: i moduli entrano nel `.pot` quando vengono installati.
+
+**Con WPML**:
+
+1. `npm run make:pot` a ogni stringa nuova o cambiata
+2. WPML → String Translation → importa `lang/theme.pot` nel dominio `theme`: le stringhe compaiono
+   nel pannello pronte da tradurre
+3. Imposta la lingua del dominio `theme` su **italiano**: WPML dà per scontato che le stringhe
+   gettext siano in inglese, e altrimenti l'italiano finisce tra le lingue da tradurre
+
+**Senza WPML** (o come riserva): traduci il `.pot` con Poedit e salva `lang/<locale>.mo`
+(`en_US.mo`): `load_theme_textdomain()` cerca il file col nome del locale, senza dominio davanti.
+
 ## 🌐 Oggetto request
 
 In ogni template Twig è disponibile una request sanitizzata:
@@ -371,6 +403,8 @@ Incluso un config Biome che gestisce la sintassi Tailwind 4.
 - 🔣 Pallino degli elenchi in `.typo-r` disegnato in CSS invece del glifo `circle-small` del font
 - 🔣 Icone negli pseudo-elementi: `url("icon:stile/nome")` nei CSS diventa l'SVG come data URI, da
   usare come `mask`
+- 🌍 `npm run make:pot`: `lang/theme.pot` con le stringhe del dominio `theme` da PHP **e Twig**
+  (pacchetto wp-cli `timber/wp-i18n-twig`), da importare in WPML String Translation
 
 ### v8.0 — Immagini responsive, difetti a monte, potatura
 

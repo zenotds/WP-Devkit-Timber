@@ -1,0 +1,91 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-10-02T13:34:48+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: theme\n"
+
+#: functions/blocks.php:161
+msgid "Blocchi tema"
+msgstr ""
+
+#: templates/partial/footer.twig:46
+msgid "P.IVA/CF/RI"
+msgstr ""
+
+#: templates/partial/footer.twig:52
+msgid "Numero REA"
+msgstr ""
+
+#: templates/partial/footer.twig:59
+msgid "Capitale sociale"
+msgstr ""
+
+#: templates/partial/footer.twig:61
+msgid "i.v."
+msgstr ""
+
+#: templates/partial/header.twig:8
+#: templates/partial/mobile-menu.twig:71
+msgid "Vai alla homepage"
+msgstr ""
+
+#: templates/partial/header.twig:21
+#: templates/partial/header.twig:44
+msgid "Seleziona lingua"
+msgstr ""
+
+#: templates/partial/header.twig:27
+#: templates/partial/header.twig:50
+msgid "Lingue disponibili"
+msgstr ""
+
+#: templates/partial/main-menu.twig:1
+msgid "Menu"
+msgstr ""
+
+#: templates/partial/main-menu.twig:28
+#: templates/partial/mobile-menu.twig:8
+msgid "Apri sottomenu"
+msgstr ""
+
+#: templates/partial/mobile-menu.twig:67
+msgid "Chiudi menu"
+msgstr ""
+
+#: templates/partial/mobile-menu.twig:80
+msgid "Menu secondario"
+msgstr ""
+
+#: templates/partial/mobile-menu.twig:90
+#: templates/partial/mobile-menu.twig:91
+msgid "Menu principale"
+msgstr ""
+
+#: templates/partial/mobile-menu.twig:100
+#: templates/partial/mobile-menu.twig:101
+msgid "Seguici"
+msgstr ""
+
+#: templates/partial/mobile-menu.twig:30
+msgid "Torna indietro"
+msgstr ""
+
+#: templates/partial/search.twig:4
+msgid "Cerca nel sito"
+msgstr ""
+
+#: templates/partial/search.twig:4
+msgid "Cosa cerchi?"
+msgstr ""
+
+#: templates/partial/search.twig:5
+msgid "Avvia ricerca"
+msgstr ""

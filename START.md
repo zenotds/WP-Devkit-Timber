@@ -17,7 +17,6 @@
 - [ ] `npm install && composer install` (il postinstall crea il symlink `wp-config.php` se il tema è dentro un'installazione WP)
 - [ ] `devkit.config.json` → `proxy` con l'URL locale, `browser` a piacere (`esbuild.js` non si tocca)
 - [ ] Prova: `npm run watch` deve compilare e aprire il proxy
-- [ ] `languages/` in root: contiene il `.mo` italiano dell'admin di Timber AVIF. Tienila (senza, Impostazioni → Timber AVIF resta in inglese); per un'altra lingua traduci `languages/timber-avif.pot` e compila con `msgfmt`
 
 ## 3. Design system
 
@@ -30,6 +29,7 @@
 ## 4. WordPress e ACF
 
 - [ ] Plugin: ACF Pro, CF7 (+ Yoast, WPML se previsti)
+- [ ] Con WPML: `npm run make:pot` (una tantum per macchina: `wp package install timber/wp-i18n-twig`), importa `lang/theme.pot` in String Translation nel dominio `theme` e imposta la lingua del dominio su italiano (README → Traduzioni del tema)
 - [ ] Chiavi API in `wp-config.php` (es. `define('GMAPS_API_KEY', '…')`) — mai nel tema
 - [ ] Admin → ACF → **Sincronizza** tutti i gruppi (moduli + options + menu)
 - [ ] Options: compila Anagrafica e Opzioni Tema (logo `header_logo`, social, footer)
